@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Roi-Kham — ตรวจสอบคำ</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --brand:        #FF6B35;
+  --brand2:       #FFD93D;
+  --dark:         #1A1A2E;
+  --dark2:        #16213E;
+  --card:         #FFFFFF;
+  --text:         #1A1A2E;
+  --text-inv:     #FFFFFF;
+  --dim:          #8B8FA8;
+  --border:       #E8E8F0;
+  --green:        #6BCB77;
+  --red:          #FF4757;
+  --yellow:       #FFD93D;
+  --mode-color:   #FF6B35;
+  --mode-color-bg:rgba(255,107,53,.14);
+}
+body[data-mode="pos"]      { --mode-color:#FF6B35; --mode-color-bg:rgba(255,107,53,.14); }
+body[data-mode="final"]    { --mode-color:#4FC3F7; --mode-color-bg:rgba(79,195,247,.14); }
+body[data-mode="livedead"] { --mode-color:#6BCB77; --mode-color-bg:rgba(107,203,119,.14); }
+body[data-mode="lead"]     { --mode-color:#FFD93D; --mode-color-bg:rgba(255,217,61,.14); }
+body[data-mode="cats"]     { --mode-color:#FF6B9D; --mode-color-bg:rgba(255,107,157,.14); }
+
+body {
+  font-family:'Noto Sans Thai','Thonburi','Tahoma',sans-serif;
+  background:var(--dark); color:var(--text-inv);
+  height:100vh; overflow:hidden;
+  font-size:14px; user-select:none; -webkit-user-select:none;
+}
+
+/* ── Header ── */
+header {
+  height:60px; background:var(--dark2);
+  border-bottom:1px solid rgba(255,255,255,.07);
+  display:flex; align-items:center; padding:0 14px; gap:10px; flex-shrink:0;
+}
+.mode-badge {
+  display:flex; align-items:center; gap:6px;
+  background:var(--mode-color-bg);
+  border:1.5px solid var(--mode-color);
+  border-radius:99px; padding:5px 13px;
+  cursor:pointer; font-family:inherit;
+  color:var(--mode-color); font-size:12px; font-weight:700;
+  flex-shrink:0; transition:filter 150ms;
+}
+.mode-badge:hover { filter:brightness(1.1); }
+.mode-badge .arrow { font-size:9px; opacity:.7; }
+.header-logo {
+  flex:1; text-align:center;
+  font-family:'Prompt',sans-serif; font-weight:800;
+  font-size:.8rem; color:rgba(255,255,255,.18); letter-spacing:4px;
+}
+.score-wrap { position:relative; display:flex; align-items:center; gap:6px; flex-shrink:0; }
+#scoreEl { font-family:'Prompt',sans-serif; font-size:13px; color:var(--brand2); font-weight:700; }
+#streakEl { font-size:12px; color:var(--brand); min-width:30px; font-weight:700; }
+.score-flash {
+  position:absolute; top:-20px; left:50%; transform:translateX(-50%);
+  font-size:13px; font-weight:800; font-family:'Prompt',sans-serif;
+  color:var(--green); pointer-events:none; opacity:0; white-space:nowrap;
+}
+.score-flash.pop { animation:popUp 600ms ease forwards; }
+@keyframes popUp { 0%{opacity:1;transform:translateX(-50%) translateY(0);} 100%{opacity:0;transform:translateX(-50%) translateY(-24px);} }
+.icon-btn {
+  font-size:16px; background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12); border-radius:10px;
+  padding:5px 8px; cursor:pointer; flex-shrink:0; line-height:1; transition:background 150ms;
+}
+.icon-btn:hover { background:rgba(255,255,255,.16); }
+
+.layout { display:flex; flex-direction:column; height:calc(100vh - 60px); }
+
+/* ── Progress ── */
+.progress-wrap {
+  display:flex; align-items:center; gap:10px; padding:7px 16px;
+  background:var(--dark2); flex-shrink:0;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.progress-bar { flex:1; height:8px; background:rgba(255,255,255,.1); border-radius:99px; overflow:hidden; }
+#progressFill { height:100%; background:var(--mode-color); border-radius:99px; width:0%; transition:width 500ms ease, background 300ms ease; }
+#progressText { font-size:10px; color:var(--dim); white-space:nowrap; }
+
+/* ── Arena ── */
+#arena { flex:1; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; background:var(--dark); }
+
+/* ── Card ── */
+.card {
+  position:absolute; width:min(320px,88vw);
+  background:var(--card); border-radius:24px;
+  box-shadow:0 20px 60px rgba(0,0,0,.55), 0 4px 16px rgba(0,0,0,.3);
+  display:flex; flex-direction:column; align-items:center;
+  padding:20px 22px 22px; gap:9px; overflow:hidden; will-change:transform;
+}
+.card-next { z-index:1; transform:scale(.95) translateY(14px); pointer-events:none; transition:transform 300ms ease; }
+.card-active { z-index:2; cursor:grab; touch-action:none; }
+.card-active:active { cursor:grabbing; }
+
+/* Mascot placeholder */
+.mascot-placeholder {
+  width:110px; height:110px;
+  border:2px dashed var(--mode-color);
+  border-radius:50%; display:flex;
+  align-items:center; justify-content:center;
+  color:var(--mode-color); font-size:.7rem; font-weight:600;
+  opacity:.45; flex-shrink:0; letter-spacing:1px;
+}
+
+/* Overlays */
+.overlay { position:absolute; inset:0; border-radius:24px; opacity:0; pointer-events:none; }
+.overlay-right { background:rgba(107,203,119,.42); }
+.overlay-left  { background:rgba(255,71,87,.42); }
+.overlay-up    { background:rgba(255,217,61,.3); }
+.overlay-label {
+  position:absolute; font-family:'Prompt',sans-serif;
+  font-size:1.6rem; font-weight:800;
+  opacity:0; pointer-events:none; border-radius:10px;
+  padding:5px 16px; border:3px solid; letter-spacing:1px;
+}
+.label-right { top:22px; left:16px; color:var(--green); border-color:var(--green); transform:rotate(-18deg); }
+.label-left  { top:22px; right:16px; color:var(--red); border-color:var(--red); transform:rotate(18deg); }
+.label-up    { bottom:22px; left:50%; transform:translateX(-50%); color:var(--yellow); border-color:var(--yellow); }
+
+/* Card content */
+.card-word-wrap { position:relative; display:flex; flex-direction:column; align-items:center; gap:4px; }
+.card-word { font-family:'Prompt',sans-serif; font-size:3.4rem; font-weight:800; color:var(--text); letter-spacing:1px; text-align:center; line-height:1.2; }
+.syl-dots { display:flex; gap:5px; }
+.syl-dot { width:6px; height:6px; border-radius:50%; background:#E0E0F0; }
+.syl-dot.filled { background:var(--mode-color); }
+.card-divider { width:60px; height:2px; background:var(--mode-color); border-radius:99px; opacity:.35; }
+.card-field-label { font-size:9px; letter-spacing:3px; text-transform:uppercase; color:var(--dim); font-weight:600; }
+.card-classification { font-family:'Prompt',sans-serif; font-size:1.5rem; font-weight:700; color:var(--mode-color); text-align:center; }
+.card-sub { font-size:11px; color:var(--dim); }
+.cat-tags { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; margin-top:2px; }
+.cat-tag { font-size:10px; padding:2px 10px; border-radius:99px; background:#F0F0F8; color:var(--dim); }
+.cat-tags-verify { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+.cat-tag-verify {
+  font-size:13px; padding:5px 14px; border-radius:99px;
+  background:var(--mode-color-bg);
+  border:1.5px solid var(--mode-color);
+  color:var(--mode-color); font-weight:700;
+}
+.cat-tag-empty { font-size:1.1rem; color:var(--dim); font-style:italic; }
+
+/* Card exit animations */
+.exit-right { transform:translateX(130vw) rotate(30deg)!important; opacity:0!important; transition:transform 320ms ease-in,opacity 320ms ease-in!important; }
+.exit-left  { transform:translateX(-130vw) rotate(-30deg)!important; opacity:0!important; transition:transform 320ms ease-in,opacity 320ms ease-in!important; }
+.exit-up    { transform:translateY(-130vh)!important; opacity:0!important; transition:transform 320ms ease-in,opacity 320ms ease-in!important; }
+.snap-back  { transition:transform 220ms cubic-bezier(.34,1.56,.64,1)!important; }
+
+/* ── Empty / Loading ── */
+#emptyState, #loadingState {
+  display:none; flex-direction:column; align-items:center;
+  gap:16px; color:var(--dim); text-align:center; padding:24px;
+}
+#emptyState.visible, #loadingState.visible { display:flex; }
+.empty-icon { font-size:3.5rem; }
+#emptyState h2 { font-family:'Prompt',sans-serif; color:var(--brand); font-size:1.4rem; font-weight:700; }
+#emptyState p { font-size:13px; line-height:1.7; color:var(--dim); }
+.spinner { width:36px; height:36px; border:3px solid rgba(255,255,255,.1); border-top-color:var(--brand); border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── Hint bar (tappable pill buttons) ── */
+.hint-row {
+  display:flex; justify-content:center; gap:10px;
+  padding:12px 16px 16px; flex-shrink:0;
+  background:var(--dark2); border-top:1px solid rgba(255,255,255,.06);
+}
+.hint-btn {
+  display:flex; align-items:center; justify-content:center; gap:5px;
+  padding:10px 0; border-radius:99px; border:none;
+  font-family:'Noto Sans Thai',sans-serif; font-size:13px; font-weight:700;
+  cursor:pointer; flex:1; max-width:110px; color:white;
+  transition:transform 100ms, filter 100ms;
+}
+.hint-btn:active { transform:scale(0.94); filter:brightness(.88); }
+.hint-wrong { background:var(--red); }
+.hint-skip  { background:rgba(255,255,255,.15); }
+.hint-right { background:var(--green); }
+
+/* ── Backdrop & Sheets ── */
+#backdrop { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:10; opacity:0; pointer-events:none; transition:opacity 280ms; }
+#backdrop.visible { opacity:1; pointer-events:auto; }
+.sheet {
+  position:fixed; bottom:0; left:0; right:0;
+  background:#FFFFFF; border-radius:24px 24px 0 0;
+  padding:12px 20px 36px; transform:translateY(100%);
+  transition:transform 280ms cubic-bezier(.4,0,.2,1);
+  max-height:85vh; overflow-y:auto; z-index:12; color:var(--text);
+}
+.sheet.visible { transform:translateY(0); }
+.sheet-handle { width:40px; height:4px; background:#E0E0E8; border-radius:99px; margin:0 auto 20px; }
+.sheet-title { font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--dim); text-align:center; margin-bottom:16px; font-weight:600; }
+.sheet-wrong-word { font-family:'Prompt',sans-serif; font-size:2rem; font-weight:800; color:var(--text); text-align:center; margin-bottom:4px; }
+.sheet-wrong-current { font-size:12px; color:var(--red); text-align:center; margin-bottom:20px; font-weight:600; }
+.sheet-cancel { width:100%; padding:12px; font-size:13px; font-family:inherit; background:transparent; border:1.5px solid #E0E0E8; border-radius:99px; color:var(--dim); cursor:pointer; transition:background 120ms; font-weight:600; }
+.sheet-cancel:hover { background:#F5F5FA; }
+.option-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:14px; }
+.option-btn {
+  padding:13px 8px; font-size:13px; font-family:inherit;
+  background:#F8F8FC; border:1.5px solid #E0E0E8; border-radius:14px;
+  color:var(--text); cursor:pointer; text-align:center;
+  transition:all 120ms; line-height:1.3; font-weight:500;
+}
+.option-btn:hover { border-color:var(--brand); background:#FFF0EA; }
+.option-btn.current-val { border-color:var(--red); color:var(--red); background:#FFF0F0; }
+.cat-chip-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:16px; }
+.cat-chip {
+  padding:10px 8px; font-size:13px; font-family:inherit;
+  background:#F8F8FC; border:1.5px solid #E0E0E8; border-radius:14px;
+  color:var(--dim); cursor:pointer; text-align:center;
+  transition:all 120ms; font-weight:500;
+}
+.cat-chip.selected { background:#FFF0EA; border-color:var(--brand); color:var(--brand); font-weight:700; }
+.confirm-btn {
+  width:100%; padding:14px; font-size:15px;
+  font-family:'Prompt',sans-serif; background:var(--brand);
+  border:none; border-radius:99px; color:white;
+  cursor:pointer; margin-bottom:10px; font-weight:700; transition:filter 120ms;
+}
+.confirm-btn:hover { filter:brightness(1.08); }
+
+/* Mode picker cards */
+.mode-card {
+  display:flex; align-items:center; gap:14px; width:100%;
+  padding:14px 16px; margin-bottom:10px;
+  background:#F8F8FC; border:none; border-left:4px solid #E0E0E8;
+  border-radius:14px; cursor:pointer; font-family:inherit;
+  text-align:left; transition:all 150ms; color:var(--text);
+}
+.mode-card[data-modeid="pos"]      { border-left-color:#FF6B35; }
+.mode-card[data-modeid="final"]    { border-left-color:#4FC3F7; }
+.mode-card[data-modeid="livedead"] { border-left-color:#6BCB77; }
+.mode-card[data-modeid="lead"]     { border-left-color:#FFD93D; }
+.mode-card[data-modeid="cats"]     { border-left-color:#FF6B9D; }
+.mode-card:hover { background:#F0F0FA; }
+.mode-card.current { background:#FFF0EA; }
+.mode-card-icon { font-size:1.6rem; flex-shrink:0; }
+.mode-card-info { flex:1; }
+.mode-card-name { font-family:'Prompt',sans-serif; font-size:15px; font-weight:700; color:var(--text); }
+.mode-card-sub { font-size:11px; color:var(--dim); margin-top:2px; }
+.mode-card-progress { font-size:11px; color:var(--dim); text-align:right; flex-shrink:0; white-space:nowrap; }
+
+/* ── Leaderboard ── */
+.lb-row { display:flex; align-items:center; gap:10px; padding:12px 6px; border-bottom:1px solid #F0F0F5; }
+.lb-rank { font-family:'Prompt',sans-serif; font-size:15px; font-weight:800; width:28px; text-align:center; flex-shrink:0; }
+.lb-avatar {
+  width:36px; height:36px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Prompt',sans-serif; font-weight:700; font-size:15px;
+  color:white; flex-shrink:0;
+}
+.lb-name { flex:1; font-size:14px; color:var(--text); font-weight:500; }
+.lb-name.me { color:var(--brand); font-weight:700; }
+.lb-score-col { text-align:right; }
+.lb-score { font-family:'Prompt',sans-serif; font-size:14px; color:var(--brand); font-weight:700; }
+.lb-total { font-size:10px; color:var(--dim); }
+
+/* ── Onboarding / Nick modal ── */
+#nickModal { position:fixed; inset:0; z-index:20; display:none; flex-direction:column; }
+#nickModal.visible { display:flex; }
+.nick-top {
+  flex:1; background:var(--brand);
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:flex-end; padding:40px 24px 32px; gap:20px; min-height:48%;
+}
+.nick-logo { font-family:'Prompt',sans-serif; font-size:2.4rem; font-weight:800; color:white; letter-spacing:5px; text-shadow:0 2px 12px rgba(0,0,0,.2); }
+.nick-bottom {
+  background:#FFFFFF; padding:32px 28px 44px;
+  display:flex; flex-direction:column; align-items:center; gap:14px;
+}
+.nick-tagline { font-size:13px; color:var(--dim); text-align:center; line-height:1.8; max-width:280px; }
+#nickInput {
+  width:100%; max-width:320px; padding:14px 20px; font-size:16px;
+  font-family:inherit; background:#F5F5FA;
+  border:2px solid #E0E0E8; border-radius:99px;
+  color:var(--text); text-align:center; outline:none; transition:border-color 200ms;
+}
+#nickInput:focus { border-color:var(--brand); }
+#nickStart {
+  width:100%; max-width:320px; padding:15px;
+  font-size:16px; font-weight:700; font-family:'Prompt',sans-serif;
+  background:var(--brand); border:none; border-radius:99px;
+  color:white; cursor:pointer; transition:filter 120ms; letter-spacing:1px;
+}
+#nickStart:hover { filter:brightness(1.08); }
+
+/* ── Streak celebration overlay ── */
+#streakCelebration {
+  position:fixed; inset:0; z-index:25;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  background:rgba(26,26,46,.82); pointer-events:none; opacity:0;
+}
+#streakCelebration.flash { animation:celebFlash 1.5s ease forwards; }
+@keyframes celebFlash {
+  0%  { opacity:0; transform:scale(.88); }
+  18% { opacity:1; transform:scale(1); }
+  72% { opacity:1; transform:scale(1); }
+  100%{ opacity:0; transform:scale(1.06); }
+}
+.celeb-emoji { font-size:4.5rem; }
+.celeb-text { font-family:'Prompt',sans-serif; font-size:1.9rem; font-weight:800; color:var(--brand2); margin-top:12px; letter-spacing:2px; }
+.celeb-sub { font-size:13px; color:rgba(255,255,255,.55); margin-top:8px; }
+
+/* ── Toast ── */
+#toast {
+  position:fixed; bottom:90px; left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--dark2); border:1px solid rgba(255,255,255,.1);
+  color:white; padding:10px 20px; border-radius:99px;
+  font-size:12px; font-weight:600; opacity:0; pointer-events:none;
+  transition:opacity 200ms,transform 200ms; z-index:30;
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+#config-error {
+  position:fixed; inset:0; z-index:40; background:var(--dark);
+  color:white; display:none; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:14px; padding:30px; text-align:center;
+}
+#config-error.visible { display:flex; }
+#config-error code { background:rgba(255,255,255,.1); padding:2px 10px; border-radius:8px; color:var(--brand2); font-size:13px; }
+
+/* ── Quiz mode ── */
+body[data-mode="quiz_pos"]   { --mode-color:#A78BFA; --mode-color-bg:rgba(167,139,250,.14); }
+body[data-mode="quiz_final"] { --mode-color:#A78BFA; --mode-color-bg:rgba(167,139,250,.14); }
+body[data-mode="quiz_spell"] { --mode-color:#A78BFA; --mode-color-bg:rgba(167,139,250,.14); }
+.mode-card[data-modeid="quiz_pos"],
+.mode-card[data-modeid="quiz_final"],
+.mode-card[data-modeid="quiz_spell"] { border-left-color:#A78BFA; }
+.mode-divider { font-size:9px; letter-spacing:2.5px; text-transform:uppercase; color:var(--dim); font-weight:700; margin:6px 2px 10px; display:flex; align-items:center; gap:8px; }
+.mode-divider::after { content:''; flex:1; height:1px; background:#ECECF4; }
+.card-quiz-prompt { font-family:'Prompt',sans-serif; font-size:1.35rem; font-weight:700; color:var(--text); text-align:center; line-height:1.4; padding:0 4px; }
+.card-quiz-prompt b { color:var(--mode-color); }
+.quiz-guess-tag { font-size:9px; letter-spacing:3px; text-transform:uppercase; color:var(--mode-color); font-weight:700; }
+#bigFlash { position:absolute; top:34%; left:50%; transform:translate(-50%,-50%); font-family:'Prompt',sans-serif; font-size:3.4rem; font-weight:800; pointer-events:none; opacity:0; z-index:5; text-shadow:0 4px 18px rgba(0,0,0,.5); }
+#bigFlash.go { animation:bigPop 720ms cubic-bezier(.2,.8,.3,1) forwards; }
+@keyframes bigPop { 0%{opacity:0;transform:translate(-50%,-25%) scale(.5);} 22%{opacity:1;transform:translate(-50%,-50%) scale(1.15);} 55%{opacity:1;transform:translate(-50%,-60%) scale(1);} 100%{opacity:0;transform:translate(-50%,-130%) scale(.95);} }
+</style>
+</head>
+<body data-mode="quiz_pos">
+
+<header>
+  <button class="mode-badge" id="modeSelectorBtn" onclick="openModePicker()">
+    <span id="modeLabel">🎮 เกมทายชนิดคำ</span><span class="arrow">▾</span>
+  </button>
+  <div class="header-logo">ROI·KHAM</div>
+  <div class="score-wrap">
+    <span id="scoreEl">⭐ 0</span>
+    <span id="streakEl"></span>
+    <span class="score-flash" id="scoreFlash"></span>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="progress-wrap">
+    <div class="progress-bar"><div id="progressFill"></div></div>
+    <span id="progressText">— / —</span>
+  </div>
+
+  <div id="arena">
+    <div id="loadingState"><div class="spinner"></div><p>กำลังโหลดคำ...</p></div>
+    <div id="emptyState">
+      <div class="empty-icon">🎮</div>
+      <h2>โหลดคำไม่ได้</h2>
+      <p>ลองรีเฟรชหน้า หรือสลับโหมดดูอีกครั้ง</p>
+    </div>
+    <div id="bigFlash"></div>
+  </div>
+
+  <div class="hint-row">
+    <button class="hint-btn hint-wrong" onclick="doSwipe('left')">✗ ผิด</button>
+    <button class="hint-btn hint-skip"  onclick="doSwipe('up')">↑ ข้าม</button>
+    <button class="hint-btn hint-right" onclick="doSwipe('right')">✓ ถูก</button>
+  </div>
+</div>
+
+<div id="backdrop" onclick="handleBackdropClick()"></div>
+
+<div class="sheet" id="modePicker">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">เลือกโหมดเกม</div>
+  <div id="modeCards"></div>
+</div>
+
+<div id="streakCelebration">
+  <div class="celeb-emoji">🔥</div>
+  <div class="celeb-text" id="celebText">Streak x5!</div>
+  <div class="celeb-sub">ยอดเยี่ยม! เดินหน้าต่อ!</div>
+</div>
+
+<div id="toast"></div>
+<div id="config-error">
+  <h2 style="color:var(--brand2)">⚙️ ยังไม่ได้ตั้งค่า Supabase</h2>
+  <p>เปิดไฟล์ <code>index.html</code> แล้วใส่ค่า<br><code>SUPABASE_URL</code> และ <code>SUPABASE_ANON_KEY</code><br>ในส่วน CONFIG ด้านบนของ &lt;script&gt;</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Local word data: fallback word source + spelling-check set for the quiz -->
+<script src="words.js"></script>
+<script>
+'use strict';
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  CONFIG — paste your Supabase project values here             ║
+   ║  Dashboard → Project Settings → API                           ║
+   ║  (the ANON / public key is safe to expose in the browser)     ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+const SUPABASE_URL      = 'https://qoceonncejbvemcgtwsn.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_tfq2N5mE7rFspK9FEmT_bw_Xcv64LU1';
+/* ────────────────────────────────────────────────────────────── */
+
+const BUFFER_SIZE = 25;
+const REFILL_AT   = 8;
+const VOTES_NEEDED = 3;
+
+/* ── Data maps ── */
+const POS_MAP = [
+  {th:'คำนาม',db:'NOUN'},{th:'คำกริยา',db:'VERB'},{th:'คำวิเศษณ์',db:'ADJ'},
+  {th:'คำกริยาวิเศษณ์',db:'ADV'},{th:'คำสรรพนาม',db:'PRON'},{th:'คำสันธาน',db:'CONJ'},
+  {th:'คำอุทาน',db:'INTJ'},{th:'คำบุพบท',db:'PREP'},{th:'คำลักษณนาม',db:'CLAS'},
+  {th:'คำนิบาต',db:'PART'},{th:'คำปฏิเสธ',db:'NEG'},{th:'อื่นๆ',db:''},
+];
+const FINAL_MAP = [
+  {th:'แม่กก',db:'กก'},{th:'แม่กด',db:'กด'},{th:'แม่กบ',db:'กบ'},{th:'แม่กง',db:'กง'},
+  {th:'แม่กน',db:'กน'},{th:'แม่กม',db:'กม'},{th:'แม่เกย',db:'เกย'},{th:'แม่เกอว',db:'เกอว'},
+  {th:'แม่ก กา (ไม่มีตัวสะกด)',db:'none'},
+];
+const MODES = [
+  {id:'quiz_pos',   th:'เกมทายชนิดคำ',  sub:'ทายถูก/ผิด · ชนิดคำ',    icon:'🎮', qkind:'pos'},
+  {id:'quiz_final', th:'เกมทายมาตรา',   sub:'ทายถูก/ผิด · ตัวสะกด',   icon:'🎮', qkind:'final'},
+  {id:'quiz_spell', th:'เกมทายคำสะกด',  sub:'ทายถูก/ผิด · สะกดถูกไหม', icon:'🎮', qkind:'spell'},
+];
+
+/* ── State ── */
+let sb = null;
+let modeId = 'quiz_pos';
+let queue = [];
+let currentWord = null;
+let activeCard = null;
+let openSheet = null;
+let fetching = false;
+
+const SWIPE_THRESHOLD = 75, ROT_MAX = 15;
+let dragging=false, startX=0, startY=0, dx=0, dy=0;
+
+/* ── Helpers ── */
+function modeObj(){ return MODES.find(m=>m.id===modeId); }
+function el(tag,cls,text){ const d=document.createElement(tag); d.className=cls; if(text!==undefined) d.textContent=text; return d; }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* ── Streak celebration ── */
+function triggerCelebration(s){
+  const msgs = {5:'🔥 Streak ×5!', 10:'⚡ Streak ×10!', 20:'🌟 Streak ×20!'};
+  const msg = msgs[s]; if(!msg) return;
+  document.getElementById('celebText').textContent = msg;
+  const cel = document.getElementById('streakCelebration');
+  cel.classList.remove('flash'); void cel.offsetWidth; cel.classList.add('flash');
+}
+
+/* ── Sound effects (Web Audio — no files, works in a single shared html) ── */
+let _ac=null;
+function audioCtx(){
+  if(_ac===null){ try{ _ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(_){ _ac=false; } }
+  return _ac || null;
+}
+function beep(freqs, dur, type, gain){
+  const ac=audioCtx(); if(!ac) return;
+  if(ac.state==='suspended'){ try{ ac.resume(); }catch(_){} }
+  let t=ac.currentTime;
+  for(const f of freqs){
+    const o=ac.createOscillator(), g=ac.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,t);
+    o.connect(g); g.connect(ac.destination);
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(gain,t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.start(t); o.stop(t+dur+0.02);
+    t+=dur*0.85;
+  }
+}
+function playSfx(kind){
+  if(kind==='correct')    beep([660,990], 0.13, 'triangle', 0.10);   // bright two-note ding
+  else if(kind==='wrong') beep([196,138], 0.20, 'sawtooth', 0.06);   // low descending buzz
+  else                    beep([430], 0.05, 'sine', 0.03);           // soft skip click
+}
+
+/* ── Big floating +N / −1 over the card ── */
+function bigFlash(pts){
+  if(!pts) return;
+  const b=document.getElementById('bigFlash'); if(!b) return;
+  b.textContent=(pts>0?'+':'')+pts;
+  b.style.color = pts>0 ? 'var(--green)' : 'var(--red)';
+  b.classList.remove('go'); void b.offsetWidth; b.classList.add('go');
+}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  QUIZ MODE — true/false swipe game (right=ถูก, left=ผิด, up=ข้าม) ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+let quizScore=0, quizStreak=0, quizBest=0, quizAnswered=0, quizSkip=0;
+
+const randOf = a => a[Math.floor(Math.random()*a.length)];
+
+// Thai labels reused from the verify maps
+const POS_TH       = Object.fromEntries(POS_MAP.map(o=>[o.db,o.th]));       // 'NOUN'->'คำนาม'
+const POS_TH_LIST  = POS_MAP.filter(o=>o.db).map(o=>o.th);
+const FINAL_TH     = Object.fromEntries(FINAL_MAP.map(o=>[o.db,o.th]));
+const FINAL_TH_LIST= FINAL_MAP.map(o=>o.th);
+function finalLabel(db){ if(!db||db==='none') return FINAL_TH['none']; return FINAL_TH[db]||null; }
+
+// Same-sound Thai consonant groups (real consonants only) for spelling corruption
+const CONFUSE_GROUPS=[['ส','ศ','ษ','ซ'],['ต','ฏ','ถ','ฐ','ท','ธ','ฑ','ฒ'],['น','ณ'],
+  ['ก','ข','ฃ','ค','ฅ','ฆ'],['พ','ภ','ป'],['ช','ฌ','ฉ'],['ด','ฎ'],['ล','ฬ'],['ห','ฮ'],['ย','ญ']];
+const CONFUSE_MAP={}; CONFUSE_GROUPS.forEach(g=>g.forEach(c=>{CONFUSE_MAP[c]=g;}));
+const isThaiWord = w => /^[฀-๿]+$/.test(w);
+function makeMisspelling(word){
+  const DB=window.WORD_DB; if(!DB) return null;        // need a real-word set to verify against
+  const chars=[...word], spots=[];
+  chars.forEach((c,i)=>{ if(CONFUSE_MAP[c]) spots.push(i); });
+  for(let i=spots.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [spots[i],spots[j]]=[spots[j],spots[i]]; }
+  for(const p of spots){
+    const alts=CONFUSE_MAP[chars[p]].filter(c=>c!==chars[p]);
+    for(let i=alts.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [alts[i],alts[j]]=[alts[j],alts[i]]; }
+    for(const alt of alts){ const cand=chars.slice(); cand[p]=alt; const s=cand.join(''); if(s!==word && !(s in DB)) return s; }
+  }
+  return null;
+}
+
+// ── Build the {display, prompt, correct, reveal} question on a word row ──
+function attachQuiz(w){
+  const kind=modeObj().qkind;
+  w._q = kind==='pos' ? genQPos(w) : kind==='final' ? genQFinal(w) : genQSpell(w);
+  return w;
+}
+function genQPos(w){
+  const real=POS_TH[w.pos];
+  if(!w.pos || !real) return null;
+  const showTrue=Math.random()<0.5;
+  const claim=showTrue ? real : randOf(POS_TH_LIST.filter(x=>x!==real));
+  return { display:w.word, prompt:`เป็น <b>${claim}</b> ใช่ไหม?`, correct:showTrue, reveal:`“${w.word}” เป็น${real}` };
+}
+function genQFinal(w){
+  const real=finalLabel(w.final_class);
+  if(!real) return null;
+  const showTrue=Math.random()<0.5;
+  const claim=showTrue ? real : randOf(FINAL_TH_LIST.filter(x=>x!==real));
+  return { display:w.word, prompt:`อยู่ในมาตรา <b>${claim}</b> ใช่ไหม?`, correct:showTrue, reveal:`“${w.word}” อยู่ในมาตรา${real}` };
+}
+function genQSpell(w){
+  if(!isThaiWord(w.word) || [...w.word].length<2) return null;
+  if(Math.random()<0.5){
+    const bad=makeMisspelling(w.word);
+    if(bad) return { display:bad, prompt:'สะกดถูกหรือไม่?', correct:false, reveal:`สะกดผิด — ที่ถูกคือ “${w.word}”` };
+  }
+  return { display:w.word, prompt:'สะกดถูกหรือไม่?', correct:true, reveal:`“${w.word}” สะกดถูกแล้ว` };
+}
+
+// ── Word source: Supabase quiz_words, fall back to local words.js ──
+let _localWords=null, _localSyl=null;
+function localWordPool(){
+  if(_localWords) return _localWords;
+  const DB=window.WORD_DB||{}; _localWords=[];
+  for(const w in DB){ if(w.indexOf(' ')<0) _localWords.push(w); }
+  return _localWords;
+}
+// ทายมาตรา offline fallback: whole words that are already a single syllable
+function localSyllablePool(){
+  if(_localSyl) return _localSyl;
+  const DB=window.WORD_DB||{}; _localSyl=[];
+  for(const w in DB){ if(w.indexOf(' ')<0 && DB[w][0]===1) _localSyl.push(w); }
+  return _localSyl.length ? _localSyl : localWordPool();
+}
+function localRow(w){ const e=window.WORD_DB[w]; return { word:w, syllables:e[0], pos:e[1], live_dead:e[2], final_class:e[3], leading_class:e[4], categories:e[7]||'' }; }
+async function quizFetch(count){
+  const isFinal = modeObj().qkind === 'final';          // ทายมาตรา → syllables
+  const rpc = isFinal ? 'quiz_syllables' : 'quiz_words';
+  if(sb){
+    try{ const {data,error}=await sb.rpc(rpc,{p_count:count}); if(error) throw error; if(data&&data.length) return data; }
+    catch(_){ /* fall back to local */ }
+  }
+  const pool = isFinal ? localSyllablePool() : localWordPool();
+  const out=[];
+  for(let i=0;i<count && pool.length;i++) out.push(localRow(pool[Math.floor(Math.random()*pool.length)]));
+  return out;
+}
+
+// ── Quiz card (no answer revealed) ──
+function createQuizCard(w, isNext){
+  const q=w._q, sylCnt=w.syllables||1;
+  const card=document.createElement('div');
+  card.className='card '+(isNext?'card-next':'card-active');
+  if(!isNext){
+    [['overlay-right','ov-r'],['overlay-left','ov-l'],['overlay-up','ov-u']].forEach(([cls,id])=>{ const d=el('div','overlay '+cls); d.id=id; card.appendChild(d); });
+    [['label-right','✓ ถูก'],['label-left','✗ ผิด'],['label-up','↑ ข้าม']].forEach(([cls,txt])=>card.appendChild(el('div','overlay-label '+cls,txt)));
+  }
+  card.appendChild(el('div','mascot-placeholder','🎮'));
+  const wrap=el('div','card-word-wrap');
+  wrap.appendChild(el('div','card-word', q?q.display:w.word));
+  if(sylCnt>1){ const dots=el('div','syl-dots'); for(let i=0;i<Math.min(sylCnt,6);i++) dots.appendChild(el('span','syl-dot filled')); wrap.appendChild(dots); }
+  card.appendChild(wrap);
+  card.appendChild(el('div','card-divider'));
+  card.appendChild(el('div','quiz-guess-tag','ทาย — จริงหรือไม่?'));
+  const p=el('div','card-quiz-prompt'); p.innerHTML=q?q.prompt:'—'; card.appendChild(p);
+  return card;
+}
+
+// ── Quiz swipe = answer ──
+function doQuizSwipe(dir){
+  if(!activeCard||!currentWord) return;
+  const q=currentWord._q;
+  if(dir==='up'){
+    quizStreak=0; quizSkip++;
+    let pts=0; if(quizSkip%3===0){ pts=-1; quizScore+=pts; }
+    quizFlash(pts,'ข้าม', q?q.reveal:''); refreshScoreDisplay();
+    playSfx('skip'); bigFlash(pts);
+    flyOut('up'); setTimeout(advance,320); return;
+  }
+  const answer=(dir==='right');                 // right=ถูก(true), left=ผิด(false)
+  const correct = !!q && (answer===q.correct);
+  quizAnswered++;
+  let pts;
+  if(correct){ quizStreak++; pts=quizStreak; quizScore+=pts; if(quizStreak>quizBest) quizBest=quizStreak; }
+  else { pts=-1; quizScore+=pts; quizStreak=0; }
+  quizFlash(pts, correct?'ถูกต้อง':'ผิด', q?q.reveal:'');
+  playSfx(correct?'correct':'wrong'); bigFlash(pts);
+  refreshScoreDisplay();
+  if(correct && (quizStreak===5||quizStreak===10||quizStreak===20)) triggerCelebration(quizStreak);
+  flyOut(dir); setTimeout(advance,320);
+}
+
+function quizFlash(pts, label, reveal){
+  const f=document.getElementById('scoreFlash');
+  f.style.color = pts<0 ? 'var(--red)' : (pts>0 ? 'var(--green)' : 'var(--dim)');
+  f.textContent = (pts>0?'+':'')+pts;
+  f.classList.remove('pop'); void f.offsetWidth; f.classList.add('pop');
+  const icon = label==='ถูกต้อง'?'✓' : label==='ผิด'?'✗' : '↑';
+  toast(reveal ? `${icon} ${label} — ${reveal}` : `${icon} ${label}`);
+}
+function refreshScoreDisplay(){
+  document.getElementById('scoreEl').textContent = `⭐ ${quizScore.toLocaleString()}`;
+  document.getElementById('streakEl').textContent = quizStreak>=3?`🔥${quizStreak}`:'';
+}
+
+/* ── Boot — anonymous, starts immediately (no nickname) ── */
+document.addEventListener('DOMContentLoaded', () => {
+  if (SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length >= 20) {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+  startGame();   // works offline from words.js if Supabase isn't configured
+});
+
+async function startGame(){
+  buildModeCards();
+  setLoading(true);
+  await refill(true);
+  setLoading(false);
+  renderCards();
+  updateHeader();
+  refreshScoreDisplay();
+  refreshStats();
+}
+
+function setLoading(on){ document.getElementById('loadingState').classList.toggle('visible', on); }
+
+/* ── Fetch words ── */
+async function refill(reset){
+  if (fetching) return;
+  fetching = true;
+  try {
+    const have = new Set(queue.map(w=>w.word));
+    const rows = await quizFetch(BUFFER_SIZE);
+    const fresh = rows.map(attachQuiz).filter(w=>w._q && !have.has(w.word));
+    if (reset) queue = fresh; else queue.push(...fresh);
+  } catch(e){
+    console.error(e);
+    toast('โหลดคำไม่สำเร็จ');
+  } finally {
+    fetching = false;
+  }
+}
+
+/* ── Rendering ── */
+function renderCards(){
+  const arena=document.getElementById('arena');
+  arena.querySelectorAll('.card').forEach(c=>c.remove());
+  if(queue.length===0){
+    document.getElementById('emptyState').classList.add('visible');
+    activeCard=null; currentWord=null; return;
+  }
+  document.getElementById('emptyState').classList.remove('visible');
+  currentWord=queue[0];
+  if(queue.length>1) arena.appendChild(createCard(queue[1],true));
+  const card=createCard(queue[0],false);
+  arena.appendChild(card); activeCard=card; attachDrag(card);
+}
+
+function createCard(w, isNext){ return createQuizCard(w, isNext); }
+
+/* ── Drag ── */
+function attachDrag(card){ card.addEventListener('pointerdown', onDown); }
+function onDown(e){ if(openSheet||!activeCard) return; dragging=true; startX=e.clientX; startY=e.clientY; dx=0; dy=0; activeCard.setPointerCapture(e.pointerId); activeCard.addEventListener('pointermove',onMove); activeCard.addEventListener('pointerup',onUp); activeCard.addEventListener('pointercancel',onCancel); }
+function onMove(e){
+  if(!dragging) return;
+  dx=e.clientX-startX; dy=e.clientY-startY;
+  activeCard.style.transform=`translate(${dx}px,${dy}px) rotate(${(dx/window.innerWidth)*ROT_MAX*2}deg)`;
+  const rP=Math.min(1,Math.max(0,dx)/SWIPE_THRESHOLD), lP=Math.min(1,Math.max(0,-dx)/SWIPE_THRESHOLD), uP=Math.min(1,Math.max(0,-dy)/SWIPE_THRESHOLD);
+  const r=document.getElementById('ov-r'),l=document.getElementById('ov-l'),u=document.getElementById('ov-u');
+  if(r)r.style.opacity=rP; if(l)l.style.opacity=lP; if(u)u.style.opacity=uP*.85;
+  activeCard.querySelectorAll('.overlay-label').forEach(d=>{
+    if(d.classList.contains('label-right'))d.style.opacity=Math.min(1,rP*1.6);
+    else if(d.classList.contains('label-left'))d.style.opacity=Math.min(1,lP*1.6);
+    else if(d.classList.contains('label-up'))d.style.opacity=Math.min(1,uP*1.6);
+  });
+}
+function onUp(){ if(!dragging) return; dragging=false; cleanupDrag(); const ax=Math.abs(dx),ay=Math.abs(dy); if(ax>SWIPE_THRESHOLD&&ax>=ay)doSwipe(dx>0?'right':'left'); else if(-dy>SWIPE_THRESHOLD&&ay>ax)doSwipe('up'); else snapBack(); }
+function onCancel(){ dragging=false; cleanupDrag(); snapBack(); }
+function cleanupDrag(){ if(!activeCard)return; activeCard.removeEventListener('pointermove',onMove); activeCard.removeEventListener('pointerup',onUp); activeCard.removeEventListener('pointercancel',onCancel); }
+function snapBack(){ if(!activeCard)return; activeCard.classList.add('snap-back'); activeCard.style.transform=''; activeCard.querySelectorAll('.overlay,.overlay-label').forEach(d=>d.style.opacity='0'); activeCard.addEventListener('transitionend',()=>activeCard&&activeCard.classList.remove('snap-back'),{once:true}); }
+
+/* ── Swipe actions ── */
+function doSwipe(dir){ if(activeCard && currentWord) doQuizSwipe(dir); }
+function flyOut(dir){ if(!activeCard)return; const n=document.getElementById('arena').querySelector('.card-next'); if(n)n.style.transform='scale(1) translateY(0)'; activeCard.classList.add('exit-'+dir); }
+function advance(){ queue.shift(); renderCards(); updateHeader(); if(queue.length<=REFILL_AT) refill(false).then(()=>{ if(!currentWord) renderCards(); }); }
+
+/* ── Mode picker ── */
+function buildModeCards(){
+  const c=document.getElementById('modeCards'); c.innerHTML='';
+  for(const m of MODES){
+    const b=document.createElement('button');
+    b.className='mode-card'+(m.id===modeId?' current':'');
+    b.dataset.modeid=m.id;
+    b.innerHTML=`<span class="mode-card-icon">${m.icon}</span><span class="mode-card-info"><span class="mode-card-name">${m.th}</span><span class="mode-card-sub">${m.sub}</span></span>`;
+    b.onclick=()=>selectMode(m.id); c.appendChild(b);
+  }
+}
+function openModePicker(){ buildModeCards(); showSheet('modePicker','mode'); }
+async function selectMode(id){
+  hideAllSheets();
+  if(id===modeId) return;
+  modeId=id; queue=[]; currentWord=null;
+  setLoading(true); await refill(true); setLoading(false);
+  renderCards(); updateHeader(); refreshScoreDisplay(); refreshStats();
+}
+
+/* ── Sheet management ── */
+function showSheet(id,name){ document.getElementById('backdrop').classList.add('visible'); document.getElementById(id).classList.add('visible'); openSheet=name; }
+function hideAllSheets(){ document.getElementById('backdrop').classList.remove('visible'); document.getElementById('modePicker').classList.remove('visible'); openSheet=null; }
+function dismissSheet(){ hideAllSheets(); snapBack(); }
+function handleBackdropClick(){ hideAllSheets(); }
+
+/* ── Stats / header ── */
+function updateHeader(){
+  const m=modeObj();
+  document.getElementById('modeLabel').textContent=`${m.icon} ${m.th}`;
+  document.body.dataset.mode=modeId;
+}
+function refreshStats(){
+  document.getElementById('progressFill').style.width='0%';
+  document.getElementById('progressText').textContent=`เกม · ตอบแล้ว ${quizAnswered} ข้อ · สตรีคสูงสุด ${quizBest}`;
+}
+
+/* ── Keyboard ── */
+document.addEventListener('keydown', e=>{
+  if(openSheet){ if(e.key==='Escape') dismissSheet(); return; }
+  if(e.key==='ArrowRight')doSwipe('right'); else if(e.key==='ArrowLeft')doSwipe('left'); else if(e.key==='ArrowUp')doSwipe('up');
+});
+</script>
+</body>
+</html>
