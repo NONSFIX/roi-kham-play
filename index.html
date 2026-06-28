@@ -310,6 +310,61 @@ header {
 .celeb-text { font-family:'Prompt',sans-serif; font-size:1.9rem; font-weight:800; color:var(--brand2); margin-top:12px; letter-spacing:2px; }
 .celeb-sub { font-size:13px; color:rgba(255,255,255,.55); margin-top:8px; }
 
+/* ── Growing background light (fills up as the round's correct count rises) ── */
+#bgGlow {
+  position:absolute; left:50%; top:50%;
+  width:170%; height:170%;
+  transform:translate(-50%,-50%) scale(calc(.55 + var(--glow,0) * .69));
+  background:radial-gradient(circle at center,
+     var(--mode-color) 0%, var(--mode-color) 16%, transparent 60%);
+  opacity:calc(.075 + var(--glow,0) * 1.0);
+  filter:blur(45px); mix-blend-mode:screen;
+  pointer-events:none; z-index:0;
+  transition:transform 600ms ease, opacity 600ms ease;
+}
+#arena > .card { z-index:1; }   /* keep cards above the glow */
+
+/* ── Report button ── */
+.report-btn { display:block; margin:9px auto 2px; background:none; border:none; color:var(--dim); font-size:11px; font-family:'Prompt',sans-serif; cursor:pointer; opacity:.7; transition:opacity 120ms, color 120ms; }
+.report-btn:hover { opacity:1; color:var(--red); }
+
+/* ── Music toggle ── */
+#musicToggle { background:none; border:none; cursor:pointer; font-size:15px; padding:0 4px; margin-right:2px; opacity:.9; line-height:1; transition:opacity 120ms, transform 120ms; }
+#musicToggle:hover { opacity:1; transform:scale(1.12); }
+#musicToggle.muted { opacity:.45; filter:grayscale(1); }
+
+/* ── Round-complete summary ── */
+#roundSummary {
+  position:fixed; inset:0; z-index:30;
+  display:none; align-items:center; justify-content:center;
+  background:rgba(26,26,46,.86); padding:24px;
+}
+#roundSummary.visible { display:flex; animation:celebFlash .5s ease; }
+.rs-card {
+  background:var(--dark2); border:1px solid rgba(255,255,255,.12);
+  border-radius:22px; padding:26px 24px; width:min(340px,90vw);
+  max-height:90vh; overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.55); text-align:center;
+}
+.rs-title { font-family:'Prompt',sans-serif; font-size:1.7rem; font-weight:800; color:var(--brand2); margin-bottom:18px; }
+.rs-stats { display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }
+.rs-row { display:flex; justify-content:space-between; align-items:center; color:rgba(255,255,255,.7); font-size:14px; }
+.rs-row b { color:white; font-size:16px; }
+.rs-total { border-top:1px solid rgba(255,255,255,.12); padding-top:12px; margin-top:2px; }
+.rs-total b { color:var(--brand2); font-size:19px; }
+.rs-ans-head { font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--dim); font-weight:700; text-align:left; margin:4px 2px 8px; }
+.rs-answers { display:flex; flex-direction:column; gap:6px; max-height:38vh; overflow-y:auto; margin-bottom:20px; }
+.rs-ans-row { display:flex; align-items:baseline; gap:8px; text-align:left; font-size:13px; padding:5px 8px; border-radius:8px; background:rgba(255,255,255,.04); }
+.rs-ans-ico { font-weight:800; flex:0 0 auto; }
+.rs-ans-word { color:white; flex:0 0 auto; font-family:'Prompt',sans-serif; }
+.rs-ans-rev { color:rgba(255,255,255,.55); font-size:12px; margin-left:auto; text-align:right; }
+.rs-next {
+  width:100%; padding:14px; font-family:'Prompt',sans-serif; font-size:1rem; font-weight:700;
+  background:var(--brand); border:none; border-radius:99px; color:white; cursor:pointer;
+  transition:filter 120ms; letter-spacing:1px;
+}
+.rs-next:hover { filter:brightness(1.08); }
+
 /* ── Toast ── */
 #toast {
   position:fixed; bottom:90px; left:50%;
@@ -355,6 +410,7 @@ body[data-mode="quiz_spell"] { --mode-color:#A78BFA; --mode-color-bg:rgba(167,13
   </button>
   <div class="header-logo">ROI·KHAM</div>
   <div class="score-wrap">
+    <button id="musicToggle" onclick="toggleMusic()" title="เปิด/ปิดเพลง">🎵</button>
     <span id="scoreEl">⭐ 0</span>
     <span id="streakEl"></span>
     <span class="score-flash" id="scoreFlash"></span>
@@ -368,6 +424,7 @@ body[data-mode="quiz_spell"] { --mode-color:#A78BFA; --mode-color-bg:rgba(167,13
   </div>
 
   <div id="arena">
+    <div id="bgGlow"></div>
     <div id="loadingState"><div class="spinner"></div><p>กำลังโหลดคำ...</p></div>
     <div id="emptyState">
       <div class="empty-icon">🎮</div>
@@ -382,6 +439,7 @@ body[data-mode="quiz_spell"] { --mode-color:#A78BFA; --mode-color-bg:rgba(167,13
     <button class="hint-btn hint-skip"  onclick="doSwipe('up')">↑ ข้าม</button>
     <button class="hint-btn hint-right" onclick="doSwipe('right')">✓ ถูก</button>
   </div>
+  <button class="report-btn" id="reportBtn" onclick="reportWord()">🚩 รายงานว่าเฉลยผิด</button>
 </div>
 
 <div id="backdrop" onclick="handleBackdropClick()"></div>
@@ -390,6 +448,16 @@ body[data-mode="quiz_spell"] { --mode-color:#A78BFA; --mode-color-bg:rgba(167,13
   <div class="sheet-handle"></div>
   <div class="sheet-title">เลือกโหมดเกม</div>
   <div id="modeCards"></div>
+</div>
+
+<div id="roundSummary">
+  <div class="rs-card">
+    <div class="rs-title">จบรอบ! 🎉</div>
+    <div class="rs-stats" id="rsStats"></div>
+    <div class="rs-ans-head">เฉลยคำในรอบนี้</div>
+    <div class="rs-answers" id="rsAnswers"></div>
+    <button class="rs-next" onclick="startNextRound()">เล่นรอบต่อไป →</button>
+  </div>
 </div>
 
 <div id="streakCelebration">
@@ -422,6 +490,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_tfq2N5mE7rFspK9FEmT_bw_Xcv64LU1';
 const BUFFER_SIZE = 25;
 const REFILL_AT   = 8;
 const VOTES_NEEDED = 3;
+const ROUND_SIZE  = 10;   // words per round
 
 /* ── Data maps ── */
 const POS_MAP = [
@@ -460,9 +529,8 @@ function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg
 
 /* ── Streak celebration ── */
 function triggerCelebration(s){
-  const msgs = {5:'🔥 Streak ×5!', 10:'⚡ Streak ×10!', 20:'🌟 Streak ×20!'};
-  const msg = msgs[s]; if(!msg) return;
-  document.getElementById('celebText').textContent = msg;
+  const icon = s>=20?'🌟' : s>=10?'⚡' : '🔥';
+  document.getElementById('celebText').textContent = `${icon} Streak ×${s}! +1 โบนัส`;
   const cel = document.getElementById('streakCelebration');
   cel.classList.remove('flash'); void cel.offsetWidth; cel.classList.add('flash');
 }
@@ -493,6 +561,63 @@ function playSfx(kind){
   else if(kind==='wrong') beep([196,138], 0.20, 'sawtooth', 0.06);   // low descending buzz
   else                    beep([430], 0.05, 'sine', 0.03);           // soft skip click
 }
+/* ── Ambient background music (Web Audio — procedural, in C major so the glow blends) ── */
+const MUSIC_SCALE  = [261.63,293.66,329.63,392.00,440.00];   // C major pentatonic (C4 D4 E4 G4 A4)
+const MUSIC_CHORDS = [                                         // slow C–Am–F–G progression (root/3rd/5th)
+  [130.81,164.81,196.00],   // C
+  [110.00,130.81,164.81],   // Am
+  [174.61,220.00,261.63],   // F
+  [196.00,246.94,293.66],   // G
+];
+let musicGain=null, musicTimer=null, musicOn=true, musicStarted=false, musicStep=0;
+
+function startMusic(){
+  if(musicStarted) return;
+  const ac=audioCtx(); if(!ac) return;
+  musicStarted=true;
+  if(ac.state==='suspended'){ try{ ac.resume(); }catch(_){} }
+  musicGain=ac.createGain();
+  musicGain.gain.value = musicOn ? 0.06 : 0.0001;
+  musicGain.connect(ac.destination);
+  playChord();
+  musicTimer=setInterval(playChord, 3800);   // change chord every ~3.8s
+}
+function playChord(){
+  const ac=audioCtx(); if(!ac||!musicGain) return;
+  const t=ac.currentTime, dur=4.2;
+  const chord=MUSIC_CHORDS[musicStep%MUSIC_CHORDS.length]; musicStep++;
+  for(const f of chord){
+    const o=ac.createOscillator(), g=ac.createGain();
+    o.type='triangle'; o.frequency.setValueAtTime(f,t);
+    o.connect(g); g.connect(musicGain);
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(0.5, t+1.3);   // slow swell in
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur); // and out
+    o.start(t); o.stop(t+dur+0.05);
+  }
+}
+function toggleMusic(){
+  musicOn=!musicOn;
+  if(musicGain){ const ac=audioCtx(); musicGain.gain.setTargetAtTime(musicOn?0.06:0.0001, ac.currentTime, 0.15); }
+  const btn=document.getElementById('musicToggle');
+  btn.textContent = musicOn?'🎵':'🔇'; btn.classList.toggle('muted',!musicOn);
+}
+
+// Sparkle that accompanies the growing-light animation; climbs the music scale so it blends with the track
+function playGlow(n){
+  const ac=audioCtx(); if(!ac) return;
+  if(ac.state==='suspended'){ try{ ac.resume(); }catch(_){} }
+  const t=ac.currentTime, i=Math.max(0,n-1);
+  const f=MUSIC_SCALE[i%MUSIC_SCALE.length]*Math.pow(2,1+Math.floor(i/MUSIC_SCALE.length)); // one octave above the pad, climbing
+  const o=ac.createOscillator(), g=ac.createGain();
+  o.type='sine'; o.frequency.setValueAtTime(f,t);
+  o.frequency.exponentialRampToValueAtTime(f*1.5, t+0.45);
+  o.connect(g); g.connect(ac.destination);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(0.08, t+0.06);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+0.5);
+  o.start(t); o.stop(t+0.55);
+}
 
 /* ── Big floating +N / −1 over the card ── */
 function bigFlash(pts){
@@ -507,6 +632,9 @@ function bigFlash(pts){
    ║  QUIZ MODE — true/false swipe game (right=ถูก, left=ผิด, up=ข้าม) ║
    ╚══════════════════════════════════════════════════════════════╝ */
 let quizScore=0, quizStreak=0, quizBest=0, quizAnswered=0, quizSkip=0;
+let roundCount=0, roundCorrect=0, roundScore=0, roundStake=0;   // per-round trackers
+let roundLog=[];                                   // per-round answer log
+let glowCount=0;                                   // consecutive-correct accumulator driving the glow
 
 const randOf = a => a[Math.floor(Math.random()*a.length)];
 
@@ -619,22 +747,34 @@ function doQuizSwipe(dir){
   const q=currentWord._q;
   if(dir==='up'){
     quizStreak=0; quizSkip++;
+    glowCount=0; setGlow();                       // skip → glow fades out
     let pts=0; if(quizSkip%3===0){ pts=-1; quizScore+=pts; }
+    roundLog.push({word:q?q.display:currentWord.word, reveal:q?q.reveal:'', outcome:'skip'});
+    roundCount++; roundScore+=pts; updateRoundProgress();
     quizFlash(pts,'ข้าม', q?q.reveal:''); refreshScoreDisplay();
     playSfx('skip'); bigFlash(pts);
-    flyOut('up'); setTimeout(advance,320); return;
+    flyOut('up'); setTimeout(roundCount>=ROUND_SIZE?endRound:advance,320); return;
   }
   const answer=(dir==='right');                 // right=ถูก(true), left=ผิด(false)
   const correct = !!q && (answer===q.correct);
   quizAnswered++;
   let pts;
-  if(correct){ quizStreak++; pts=quizStreak; quizScore+=pts; if(quizStreak>quizBest) quizBest=quizStreak; }
-  else { pts=-1; quizScore+=pts; quizStreak=0; }
+  if(correct){
+    quizStreak++;
+    pts=1;
+    if(quizStreak%3===0){ pts+=1; roundStake++; }  // +1 "stake" bonus every 3 in a row
+    quizScore+=pts;
+    roundCorrect++; glowCount++; setGlow(); playGlow(glowCount);  // grow the light + scale-note sparkle
+    if(quizStreak>quizBest) quizBest=quizStreak;
+  }
+  else { pts=-1; quizScore+=pts; quizStreak=0; glowCount=0; setGlow(); }   // wrong → glow fades out
+  roundLog.push({word:q?q.display:currentWord.word, reveal:q?q.reveal:'', outcome:correct?'correct':'wrong'});
+  roundCount++; roundScore+=pts; updateRoundProgress();
   quizFlash(pts, correct?'ถูกต้อง':'ผิด', q?q.reveal:'');
   playSfx(correct?'correct':'wrong'); bigFlash(pts);
   refreshScoreDisplay();
-  if(correct && (quizStreak===5||quizStreak===10||quizStreak===20)) triggerCelebration(quizStreak);
-  flyOut(dir); setTimeout(advance,320);
+  if(correct && quizStreak%3===0) triggerCelebration(quizStreak);
+  flyOut(dir); setTimeout(roundCount>=ROUND_SIZE?endRound:advance,320);
 }
 
 function quizFlash(pts, label, reveal){
@@ -650,12 +790,70 @@ function refreshScoreDisplay(){
   document.getElementById('streakEl').textContent = quizStreak>=3?`🔥${quizStreak}`:'';
 }
 
+/* ── Report a word whose answer the player thinks is wrong ── */
+let _lastReport='';
+async function reportWord(){
+  if(!currentWord){ toast('ไม่มีคำให้รายงาน'); return; }
+  const w=currentWord.word, q=currentWord._q;
+  if(_lastReport===w+modeId){ toast('🚩 รายงานคำนี้ไปแล้ว'); return; }   // avoid double-send
+  const note=`mode=${modeId}`+(q?`; prompt=${(q.prompt||'').replace(/<[^>]*>/g,'')}; reveal=${q.reveal||''}; correct=${q.correct}`:'');
+  _lastReport=w+modeId;
+  try{
+    if(!sb) throw new Error('offline');
+    const {error}=await sb.from('pending_words').insert({action:'report', word:w, note});
+    if(error) throw error;
+    toast('🚩 ขอบคุณ! ส่งรายงานแล้ว');
+  }catch(e){
+    console.warn('report failed:', e);
+    toast('🚩 บันทึกรายงานไว้แล้ว ขอบคุณ!');
+  }
+}
+
+/* ── Round flow: 10 words per round + growing background light ── */
+function setGlow(){
+  document.getElementById('arena').style.setProperty('--glow',Math.min(glowCount/ROUND_SIZE,1).toFixed(3));
+}
+function updateRoundProgress(){
+  document.getElementById('progressFill').style.width = (roundCount/ROUND_SIZE*100)+'%';
+  document.getElementById('progressText').textContent =
+    `รอบนี้ ${roundCount}/${ROUND_SIZE} · ถูก ${roundCorrect} · สตรีคสูงสุด ${quizBest}`;
+}
+function resetRound(){ roundCount=0; roundCorrect=0; roundScore=0; roundStake=0; roundLog=[]; glowCount=0; setGlow(); updateRoundProgress(); }
+function endRound(){
+  queue.shift();
+  if(queue.length<=REFILL_AT) refill(false);
+  showRoundSummary();
+}
+function showRoundSummary(){
+  document.getElementById('rsStats').innerHTML =
+    `<div class="rs-row"><span>คะแนนรอบนี้</span><b>${roundScore>0?'+':''}${roundScore}</b></div>`+
+    `<div class="rs-row"><span>ตอบถูก</span><b>${roundCorrect}/${ROUND_SIZE}</b></div>`+
+    `<div class="rs-row"><span>โบนัสสตรีค</span><b>+${roundStake}</b></div>`+
+    `<div class="rs-row"><span>สตรีคสูงสุด</span><b>🔥 ${quizBest}</b></div>`+
+    `<div class="rs-row rs-total"><span>คะแนนรวม</span><b>⭐ ${quizScore.toLocaleString()}</b></div>`;
+  const ICON={correct:'<span style="color:var(--green)">✓</span>',wrong:'<span style="color:var(--red)">✗</span>',skip:'<span style="color:var(--yellow)">↑</span>'};
+  document.getElementById('rsAnswers').innerHTML = roundLog.map(e=>
+    `<div class="rs-ans-row"><span class="rs-ans-ico">${ICON[e.outcome]}</span>`+
+    `<b class="rs-ans-word">${e.word}</b>`+
+    `<span class="rs-ans-rev">${e.reveal||''}</span></div>`
+  ).join('');
+  document.getElementById('roundSummary').classList.add('visible');
+}
+function startNextRound(){
+  document.getElementById('roundSummary').classList.remove('visible');
+  resetRound();
+  renderCards(); updateHeader();
+}
+
 /* ── Boot — anonymous, starts immediately (no nickname) ── */
 document.addEventListener('DOMContentLoaded', () => {
   if (SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length >= 20) {
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
   startGame();   // works offline from words.js if Supabase isn't configured
+  // Autoplay is blocked until a user gesture — kick off the background music on the first interaction
+  document.addEventListener('pointerdown', startMusic, {once:true});
+  document.addEventListener('keydown', startMusic, {once:true});
 });
 
 async function startGame(){
@@ -667,6 +865,7 @@ async function startGame(){
   updateHeader();
   refreshScoreDisplay();
   refreshStats();
+  resetRound();
 }
 
 function setLoading(on){ document.getElementById('loadingState').classList.toggle('visible', on); }
@@ -727,9 +926,9 @@ function cleanupDrag(){ if(!activeCard)return; activeCard.removeEventListener('p
 function snapBack(){ if(!activeCard)return; activeCard.classList.add('snap-back'); activeCard.style.transform=''; activeCard.querySelectorAll('.overlay,.overlay-label').forEach(d=>d.style.opacity='0'); activeCard.addEventListener('transitionend',()=>activeCard&&activeCard.classList.remove('snap-back'),{once:true}); }
 
 /* ── Swipe actions ── */
-function doSwipe(dir){ if(activeCard && currentWord) doQuizSwipe(dir); }
+function doSwipe(dir){ if(document.getElementById('roundSummary').classList.contains('visible')) return; if(activeCard && currentWord) doQuizSwipe(dir); }
 function flyOut(dir){ if(!activeCard)return; const n=document.getElementById('arena').querySelector('.card-next'); if(n)n.style.transform='scale(1) translateY(0)'; activeCard.classList.add('exit-'+dir); }
-function advance(){ queue.shift(); renderCards(); updateHeader(); if(queue.length<=REFILL_AT) refill(false).then(()=>{ if(!currentWord) renderCards(); }); }
+function advance(){ queue.shift(); renderCards(); updateHeader(); updateRoundProgress(); if(queue.length<=REFILL_AT) refill(false).then(()=>{ if(!currentWord) renderCards(); }); }
 
 /* ── Mode picker ── */
 function buildModeCards(){
@@ -747,8 +946,9 @@ async function selectMode(id){
   hideAllSheets();
   if(id===modeId) return;
   modeId=id; queue=[]; currentWord=null;
+  document.getElementById('roundSummary').classList.remove('visible');
   setLoading(true); await refill(true); setLoading(false);
-  renderCards(); updateHeader(); refreshScoreDisplay(); refreshStats();
+  renderCards(); updateHeader(); refreshScoreDisplay(); refreshStats(); resetRound();
 }
 
 /* ── Sheet management ── */
