@@ -9,25 +9,37 @@
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 
 /* ═══════════════════════════════════════════════════════════════
-   NEO-BRUTALIST — strictly black & white. Meaning is carried by
-   fills, borders, hard shadows, glyphs & patterns, never by hue.
+   ROI-KHAM — light, full-colour neo-brutalism (Claude Design tokens).
+   Hue carries meaning (correct/wrong/skip + per-mode accent);
+   thick ink outlines + hard offset shadows carry structure.
+   Black & white is scoped to the offline / empty state ONLY.
    ═══════════════════════════════════════════════════════════════ */
 :root{
-  --ink:#0B0B0B;
-  --paper:#FFFFFF;
-  --panel:#F2F2F2;
-  --mute:#6E6E6E;
-  --line:#0B0B0B;
+  --ink:#1A1410;        /* warm near-black — outlines + text */
+  --paper:#FFFFFF;      /* card / sheet surface */
+  --bg:#FAF4E8;         /* warm cream app background */
+  --panel:#F2EADA;      /* inset panel on cream */
+  --mute:#6E665C;       /* muted warm grey text */
+  --line:#1A1410;
+  --primary:#FF6B35;    /* brand orange */
+  --highlight:#FFD93D;  /* yellow — accents, milestones */
+  --correct:#2BB673;    /* swipe right · ถูก */
+  --wrong:#FF4757;      /* swipe left · ผิด */
+  --skip:#FFC23C;       /* swipe up · ข้าม */
+  --mode:#FF6B35;       /* current-mode accent (set per mode below) */
   --bd:3px;
   --bd-thick:4px;
   --sh:6px 6px 0 var(--ink);
   --sh-sm:4px 4px 0 var(--ink);
   --sh-lg:9px 9px 0 var(--ink);
 }
+body[data-mode="quiz_pos"]   { --mode:#FF6B35; }
+body[data-mode="quiz_final"] { --mode:#4FC3F7; }
+body[data-mode="quiz_spell"] { --mode:#A78BFA; }
 
 body{
   font-family:'Sarabun','Tahoma',sans-serif;
-  background:var(--paper); color:var(--ink);
+  background:var(--bg); color:var(--ink);
   height:100vh; overflow:hidden;
   font-size:15px; user-select:none; -webkit-user-select:none;
   -webkit-tap-highlight-color:transparent;
@@ -37,7 +49,7 @@ button{ font-family:inherit; color:var(--ink); }
 
 /* ── Header ── */
 header{
-  height:64px; background:var(--paper);
+  height:64px; background:var(--bg);
   border-bottom:var(--bd-thick) solid var(--ink);
   display:flex; align-items:center; padding:0 12px; gap:8px; flex-shrink:0;
 }
@@ -97,7 +109,7 @@ header{
 /* ── Progress + XP ── */
 .progress-wrap{ display:flex; align-items:center; gap:10px; padding:9px 16px 5px; flex-shrink:0; }
 .progress-bar{ flex:1; height:14px; background:var(--paper); border:var(--bd) solid var(--ink); border-radius:999px; overflow:hidden; }
-#progressFill{ height:100%; background:var(--ink); width:0%; transition:width 450ms ease; }
+#progressFill{ height:100%; background:var(--mode); width:0%; transition:width 450ms ease, background 300ms ease; }
 #progressText{ font-size:11px; color:var(--mute); white-space:nowrap; font-weight:600; }
 .xp-wrap{ display:flex; align-items:center; gap:8px; padding:0 16px 8px; flex-shrink:0; }
 .lv-chip{ font-family:'Space Mono',monospace; font-weight:700; font-size:11px; border:2px solid var(--ink); border-radius:6px; padding:2px 6px; white-space:nowrap; }
@@ -109,8 +121,8 @@ header{
 #bgGlow{
   position:absolute; left:50%; top:50%; width:170%; height:170%;
   transform:translate(-50%,-50%) scale(calc(.5 + var(--glow,0) * .72));
-  background:radial-gradient(circle at center, #000 0%, #000 13%, transparent 58%);
-  opacity:calc(var(--glow,0) * 0.16); filter:blur(42px);
+  background:radial-gradient(circle at center, var(--mode) 0%, var(--mode) 14%, transparent 60%);
+  opacity:calc(.03 + var(--glow,0) * 0.42); filter:blur(44px);
   mix-blend-mode:multiply; pointer-events:none; z-index:0;
   transition:transform 600ms ease, opacity 600ms ease;
 }
@@ -133,25 +145,25 @@ header{
 
 /* swipe overlays — monochrome, differentiated by fill/pattern */
 .overlay{ position:absolute; inset:0; border-radius:14px; opacity:0; pointer-events:none; }
-.overlay-right{ background:var(--ink); }
-.overlay-left{ background:#fff; background-image:repeating-linear-gradient(45deg,var(--ink) 0 9px,#fff 9px 18px); }
-.overlay-up{ background:#B8B8B8; }
+.overlay-right{ background:var(--correct); }
+.overlay-left{ background:var(--wrong); }
+.overlay-up{ background:var(--skip); }
 .overlay-label{
   position:absolute; font-weight:800; font-size:1.4rem;
   opacity:0; pointer-events:none; border-radius:10px;
   padding:6px 16px; border:var(--bd) solid var(--ink);
   background:var(--paper); color:var(--ink); box-shadow:var(--sh-sm);
 }
-.label-right{ top:24px; left:18px; transform:rotate(-12deg); }
-.label-left{  top:24px; right:18px; transform:rotate(12deg); }
-.label-up{    bottom:24px; left:50%; transform:translateX(-50%); }
+.label-right{ top:24px; left:18px; transform:rotate(-12deg); color:var(--correct); border-color:var(--correct); }
+.label-left{  top:24px; right:18px; transform:rotate(12deg); color:var(--wrong); border-color:var(--wrong); }
+.label-up{    bottom:24px; left:50%; transform:translateX(-50%); color:var(--skip-ink,#9A6F12); border-color:var(--skip); }
 
 .card-word-wrap{ position:relative; display:flex; flex-direction:column; align-items:center; gap:6px; }
 .card-word{ font-weight:800; font-size:3.2rem; line-height:1.15; letter-spacing:.5px; text-align:center; }
 .syl-dots{ display:flex; gap:6px; }
 .syl-dot{ width:9px; height:9px; border:2px solid var(--ink); border-radius:50%; background:var(--paper); }
-.syl-dot.filled{ background:var(--ink); }
-.card-divider{ width:64px; height:var(--bd); background:var(--ink); border-radius:99px; }
+.syl-dot.filled{ background:var(--mode); }
+.card-divider{ width:64px; height:var(--bd); background:var(--mode); border-radius:99px; }
 .quiz-guess-tag{ font-family:'Space Mono',monospace; font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--mute); font-weight:700; }
 .card-quiz-prompt{ font-size:1.3rem; font-weight:600; text-align:center; line-height:1.45; padding:0 4px; }
 .card-quiz-prompt b{ font-weight:800; text-decoration:underline; text-underline-offset:3px; }
@@ -168,6 +180,8 @@ header{
 /* ── Empty / Loading ── */
 #emptyState, #loadingState{ display:none; flex-direction:column; align-items:center; gap:14px; text-align:center; padding:24px; z-index:2; }
 #emptyState.visible, #loadingState.visible{ display:flex; }
+/* offline / empty state — the ONLY black & white screen */
+#emptyState{ filter:grayscale(1); }
 #emptyState .mascot-slot{ width:96px; height:96px; }
 #emptyState h2{ font-size:1.3rem; font-weight:800; }
 #emptyState p{ font-size:13px; line-height:1.7; color:var(--mute); }
@@ -183,9 +197,9 @@ header{
   box-shadow:var(--sh-sm); transition:transform 80ms, box-shadow 80ms;
 }
 .hint-btn:active{ transform:translate(3px,3px); box-shadow:0 0 0 var(--ink); }
-.hint-wrong{ background:var(--paper); color:var(--ink); }
-.hint-skip{  background:var(--panel); color:var(--ink); }
-.hint-right{ background:var(--ink); color:var(--paper); }
+.hint-wrong{ background:var(--wrong); color:#fff; }
+.hint-skip{  background:var(--skip); color:var(--ink); }
+.hint-right{ background:var(--correct); color:#fff; }
 .report-btn{ display:block; margin:0 auto 8px; background:none; border:none; color:var(--mute); font-size:12px; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
 .report-btn:active{ color:var(--ink); }
 
@@ -307,7 +321,8 @@ header{
 
 /* milestone */
 #milestone .celeb-mascot{ width:160px; height:160px; }
-.ms-badge{ font-family:'Space Mono',monospace; font-weight:700; font-size:13px; letter-spacing:3px; border:var(--bd) solid var(--ink); border-radius:999px; padding:8px 18px; margin-top:6px; }
+.ms-badge{ font-family:'Space Mono',monospace; font-weight:700; font-size:13px; letter-spacing:2px; background:var(--highlight); border:var(--bd) solid var(--ink); border-radius:999px; padding:8px 18px; margin-top:6px; box-shadow:var(--sh-sm); }
+.ms-num{ color:var(--primary); }
 .ms-num{ font-family:'Space Mono',monospace; font-size:4rem; font-weight:700; line-height:1; margin-top:10px; }
 
 /* nickname */
@@ -609,40 +624,43 @@ function hideEl(id){ document.getElementById(id).classList.remove('visible'); }
    ║  emotions: idle | happy | sad | surprised | party        ║
    ╚══════════════════════════════════════════════════════════╝ */
 function mascot(emotion='idle'){
+  const INK='#1A1410', ORANGE='#FF6B35', YELLOW='#FFD93D';
+  const cheek = {idle:'#FFB59B',happy:'#FF8A6B',sad:'#9DB7C9',surprised:'#FFC23C',party:'#FF8A6B'}[emotion]||'#FFB59B';
   const eyes = {
-    idle:      '<circle cx="37" cy="50" r="5"/><circle cx="63" cy="50" r="5"/>',
-    happy:     '<path d="M31 52 q6 -8 12 0" fill="none" stroke="#0B0B0B" stroke-width="4" stroke-linecap="round"/><path d="M57 52 q6 -8 12 0" fill="none" stroke="#0B0B0B" stroke-width="4" stroke-linecap="round"/>',
-    sad:       '<path d="M31 49 q6 7 12 0" fill="none" stroke="#0B0B0B" stroke-width="4" stroke-linecap="round"/><path d="M57 49 q6 7 12 0" fill="none" stroke="#0B0B0B" stroke-width="4" stroke-linecap="round"/>',
-    surprised: '<circle cx="37" cy="50" r="6"/><circle cx="63" cy="50" r="6"/>',
-    party:     '<path d="M30 50 l7 -7 7 7 -7 7 z"/><path d="M56 50 l7 -7 7 7 -7 7 z"/>',
-  }[emotion] || eyes.idle;
+    idle:'<circle cx="37" cy="50" r="5"/><circle cx="63" cy="50" r="5"/>',
+    happy:'<path d="M31 52 q6 -8 12 0" fill="none" stroke="#1A1410" stroke-width="4" stroke-linecap="round"/><path d="M57 52 q6 -8 12 0" fill="none" stroke="#1A1410" stroke-width="4" stroke-linecap="round"/>',
+    sad:'<path d="M31 49 q6 7 12 0" fill="none" stroke="#1A1410" stroke-width="4" stroke-linecap="round"/><path d="M57 49 q6 7 12 0" fill="none" stroke="#1A1410" stroke-width="4" stroke-linecap="round"/>',
+    surprised:'<circle cx="37" cy="50" r="6"/><circle cx="63" cy="50" r="6"/>',
+    party:'<path d="M30 50 l7 -7 7 7 -7 7 z"/><path d="M56 50 l7 -7 7 7 -7 7 z"/>'
+  }[emotion]||'<circle cx="37" cy="50" r="5"/><circle cx="63" cy="50" r="5"/>';
   const mouth = {
-    idle:      '<path d="M42 68 h16" fill="none" stroke="#0B0B0B" stroke-width="4" stroke-linecap="round"/>',
-    happy:     '<path d="M38 64 q12 14 24 0" fill="none" stroke="#0B0B0B" stroke-width="4" stroke-linecap="round"/>',
-    sad:       '<path d="M38 70 q12 -12 24 0" fill="none" stroke="#0B0B0B" stroke-width="4" stroke-linecap="round"/>',
-    surprised: '<circle cx="50" cy="68" r="6" fill="none" stroke="#0B0B0B" stroke-width="4"/>',
-    party:     '<path d="M36 62 q14 18 28 0 z" fill="#0B0B0B"/>',
-  }[emotion] || mouth?.idle;
-  const extra = emotion==='party'
-    ? '<path d="M14 24 l3 7 7 1 -5 5 1 7 -6 -4 -6 4 1 -7 -5 -5 7 -1 z"/><path d="M82 18 l2 5 5 1 -4 4 1 5 -4 -3 -4 3 1 -5 -4 -4 5 -1 z"/>'
+    idle:'<path d="M42 68 h16" fill="none" stroke="#1A1410" stroke-width="4" stroke-linecap="round"/>',
+    happy:'<path d="M38 64 q12 14 24 0" fill="none" stroke="#1A1410" stroke-width="4" stroke-linecap="round"/>',
+    sad:'<path d="M38 70 q12 -12 24 0" fill="none" stroke="#1A1410" stroke-width="4" stroke-linecap="round"/>',
+    surprised:'<circle cx="50" cy="68" r="6" fill="none" stroke="#1A1410" stroke-width="4"/>',
+    party:'<path d="M36 62 q14 18 28 0 z" fill="#1A1410"/>'
+  }[emotion]||'<path d="M42 68 h16" fill="none" stroke="#1A1410" stroke-width="4" stroke-linecap="round"/>';
+  const stars = emotion==='party'
+    ? `<path d="M14 24 l3 7 7 1 -5 5 1 7 -6 -4 -6 4 1 -7 -5 -5 7 -1 z" fill="${YELLOW}" stroke="${INK}" stroke-width="2"/><path d="M82 18 l2 5 5 1 -4 4 1 5 -4 -3 -4 3 1 -5 -4 -4 5 -1 z" fill="${ORANGE}" stroke="${INK}" stroke-width="2"/>`
     : '';
-  // body: rounded square head + antenna with a "คำ" speech dot
-  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="#0B0B0B">
-    <line x1="50" y1="14" x2="50" y2="4" stroke="#0B0B0B" stroke-width="4" stroke-linecap="round"/>
-    <circle cx="50" cy="6" r="4"/>
-    <rect x="14" y="16" width="72" height="72" rx="20" fill="#fff" stroke="#0B0B0B" stroke-width="5"/>
-    ${eyes}${mouth}${extra}
-    <text x="50" y="84" font-family="Sarabun,sans-serif" font-size="11" font-weight="800" text-anchor="middle" fill="#0B0B0B">คำ</text>
-  </svg>`;
+  // น้องคำ — colour art from the Claude Design system (rounded head, orange antenna, blush cheeks)
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="${INK}" role="img" aria-label="น้องคำ">`+
+    `<line x1="50" y1="14" x2="50" y2="5" stroke="${INK}" stroke-width="4" stroke-linecap="round"/>`+
+    `<circle cx="50" cy="6" r="5" fill="${ORANGE}" stroke="${INK}" stroke-width="2.5"/>`+
+    `<rect x="13" y="16" width="74" height="74" rx="20" fill="#FFFFFF" stroke="${INK}" stroke-width="5"/>`+
+    `<ellipse cx="29" cy="62" rx="6" ry="4" fill="${cheek}"/><ellipse cx="71" cy="62" rx="6" ry="4" fill="${cheek}"/>`+
+    eyes+mouth+stars+
+    `<text x="50" y="85" font-family="Sarabun, sans-serif" font-size="12" font-weight="800" text-anchor="middle" fill="${INK}">คำ</text></svg>`;
 }
 /* small mode glyphs (monochrome) */
 function modeGlyph(qkind){
+  const col = qkind==='pos'?'#FF6B35':qkind==='final'?'#4FC3F7':'#A78BFA';
   const inner = qkind==='pos'   ? '<text x="11" y="15" font-size="12" font-weight="800" text-anchor="middle" font-family="Sarabun">ก</text>'
             : qkind==='final' ? '<text x="11" y="15" font-size="11" font-weight="800" text-anchor="middle" font-family="Sarabun">ม</text>'
-            :                   '<path d="M6 11 l3 3 6 -7" fill="none" stroke="#0B0B0B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
-  return `<svg viewBox="0 0 22 22" fill="#0B0B0B"><rect x="2" y="2" width="18" height="18" rx="6" fill="#fff" stroke="#0B0B0B" stroke-width="2.4"/>${inner}</svg>`;
+            :                   '<path d="M6 11 l3 3 6 -7" fill="none" stroke="#1A1410" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
+  return `<svg viewBox="0 0 22 22" fill="#1A1410"><rect x="2" y="2" width="18" height="18" rx="6" fill="${col}" stroke="#1A1410" stroke-width="2.4"/>${inner}</svg>`;
 }
-function flameGlyph(){ return '<svg viewBox="0 0 14 16" fill="#0B0B0B"><path d="M7 0 C9 4 12 5 12 9 a5 5 0 0 1 -10 0 C2 6 4 6 4 4 C5 6 6 5 6 3 C6 2 6 1 7 0 Z"/></svg>'; }
+function flameGlyph(){ return '<svg viewBox="0 0 14 16" fill="#FF6B35"><path d="M7 0 C9 4 12 5 12 9 a5 5 0 0 1 -10 0 C2 6 4 6 4 4 C5 6 6 5 6 3 C6 2 6 1 7 0 Z"/></svg>'; }
 
 /* ╔══════════════════════════════════════════════════════════╗
    ║  AUDIO — procedural Web-Audio music + SFX (no files)      ║
@@ -707,6 +725,7 @@ function playGlow(n){
 function bigFlash(pts){
   if(!pts) return; const b=document.getElementById('bigFlash'); if(!b) return;
   b.textContent=(pts>0?'+':'')+pts;
+  b.style.color = pts>0 ? 'var(--correct)' : 'var(--wrong)';
   b.classList.remove('go'); void b.offsetWidth; b.classList.add('go');
 }
 
@@ -848,6 +867,7 @@ function doQuizSwipe(dir){
 function quizFlash(pts,label,reveal){
   const f=document.getElementById('scoreFlash');
   f.textContent=(pts>0?'+':'')+pts;
+  f.style.color = pts>0 ? 'var(--correct)' : (pts<0 ? 'var(--wrong)' : 'var(--mute)');
   f.classList.remove('pop'); void f.offsetWidth; f.classList.add('pop');
   const icon = label==='ถูกต้อง'?'✓':label==='ผิด'?'✗':'↑';
   toast(reveal?`${icon} ${label} — ${reveal}`:`${icon} ${label}`);
@@ -918,7 +938,8 @@ function spawnConfetti(parentId){
     const c=document.createElement('div'); c.className='confetti';
     c.style.left=(Math.random()*100)+'%';
     c.style.animationDelay=(Math.random()*0.5)+'s';
-    c.style.opacity=0.5+Math.random()*0.5;
+    c.style.opacity=0.7+Math.random()*0.3;
+    c.style.background=['#FF6B35','#FFD93D','#4FC3F7','#2BB673','#A78BFA'][i%5];
     if(i%2) c.style.borderRadius='50%';
     p.appendChild(c);
   }
