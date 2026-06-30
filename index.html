@@ -94,7 +94,7 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 
 /* ── Card ── */
 .card{
-  position:absolute; width:min(216px,62vw); aspect-ratio:208/256;
+  position:absolute; width:min(300px,84vw); aspect-ratio:208/256;
   background:var(--surface); border:var(--bd) solid var(--ink);
   border-radius:24px; box-shadow:var(--sh-6);
   display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -111,7 +111,7 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 .label-right{ top:14px; left:14px; transform:rotate(-16deg); color:var(--correct); border-color:var(--correct); }
 .label-left{  top:14px; right:14px; transform:rotate(16deg); color:var(--wrong); border-color:var(--wrong); }
 .label-up{    bottom:14px; left:50%; transform:translateX(-50%); color:var(--mute); border-color:var(--ink); }
-.card-word{ font-weight:800; font-size:2.9rem; line-height:1; text-align:center; }
+.card-word{ font-weight:800; font-size:2.9rem; line-height:1.08; text-align:center; max-width:100%; overflow-wrap:anywhere; word-break:break-word; }
 .syl-dots{ display:flex; gap:5px; }
 .syl-dot{ width:8px; height:8px; border:2px solid var(--ink); border-radius:50%; background:var(--surface); }
 .syl-dot.filled{ background:var(--mode); }
@@ -397,6 +397,11 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
   <div class="sheet-title">เลือกโหมดเกม</div>
   <div id="mpRows"></div>
 </div>
+<div class="sheet" id="subPicker">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">ทายมาตรา — เลือกแม่</div>
+  <div id="spRows"></div>
+</div>
 
 <!-- ════ ROUND SUMMARY ════ -->
 <div id="roundSummary">
@@ -413,6 +418,7 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="words.js"></script>
+<script src="syllables.js"></script>
 <script>
 'use strict';
 
@@ -486,9 +492,11 @@ function level(){ return Math.floor(profile.xp/100)+1; }
 function xpInLevel(){ return profile.xp%100; }
 
 /* ── State ── */
-let sb=null, modeId='quiz_pos', queue=[], currentWord=null, activeCard=null, openSheet=null, fetching=false;
+let sb=null, modeId='quiz_pos', subFinal=null, queue=[], currentWord=null, activeCard=null, openSheet=null, fetching=false;
+const SUB_FINALS=[{db:null,th:'รวมทุกแม่',short:'ทุกแม่'}].concat(FINAL_MAP.map(o=>({db:o.db,th:o.th,short:o.db==='none'?'แม่ก กา':o.th})));
 let quizScore=0, quizStreak=0, quizBest=0, quizAnswered=0, quizSkip=0;
-let roundCount=0, roundCorrect=0, roundScore=0, roundStake=0, roundLog=[], glowCount=0;
+let roundCount=0, roundCorrect=0, roundScore=0, roundStake=0, roundLog=[];
+let glowLevel=0, lastAnsTs=0, glowDecayTimer=null;
 let milestonesThisSession=new Set();
 let curTab='home', curScreen='home', idleTimer=null, mascotTimer=null;
 const SWIPE_THRESHOLD=75, ROT_MAX=15;
@@ -526,6 +534,7 @@ function reactMascot(e){
 }
 function resetIdle(){ clearTimeout(idleTimer); idleTimer=setTimeout(()=>{ if(curScreen==='arena' && !anyFsOpen()) setHudMascot('sleepy'); },7000); }
 
+
 /* ╔══ AUDIO ══╗ */
 let _ac=null;
 function audioCtx(){ if(_ac===null){ try{ _ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(_){ _ac=false; } } return _ac||null; }
@@ -552,23 +561,53 @@ const isThaiWord=w=>/^[฀-๿]+$/.test(w);
 const _embedDict=Object.fromEntries(EMBED_WORDS.map(w=>[w.word,1]));
 function spellDict(){ return window.WORD_DB||_embedDict; }
 function makeMisspelling(word){ const DB=spellDict(); if(!DB) return null; const chars=[...word],spots=[]; chars.forEach((c,i)=>{ if(CONFUSE_MAP[c]) spots.push(i); }); for(let i=spots.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [spots[i],spots[j]]=[spots[j],spots[i]]; } for(const p of spots){ const alts=CONFUSE_MAP[chars[p]].filter(c=>c!==chars[p]); for(let i=alts.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [alts[i],alts[j]]=[alts[j],alts[i]]; } for(const alt of alts){ const cand=chars.slice(); cand[p]=alt; const s=cand.join(''); if(s!==word && !(s in DB)) return s; } } return null; }
-function attachQuiz(w){ const k=modeObj().qkind; w._q=k==='pos'?genQPos(w):k==='final'?genQFinal(w):genQSpell(w); return w; }
+const lastCons=w=>{ const cs=[...String(w)].filter(c=>c>='ก'&&c<='ฮ'); return cs.length?cs[cs.length-1]:''; };
+const normFinal=f=>f||'none';
+function attachQuiz(w){ const k=modeObj().qkind; w._q = k==='pos'?genQPos(w) : k==='final'?(subFinal?genQFinalTarget(w,subFinal):genQFinal(w)) : genQSpell(w); return w; }
 function genQPos(w){ const real=POS_TH[w.pos]; if(!w.pos||!real) return null; const showTrue=Math.random()<0.5; const claim=showTrue?real:randOf(POS_TH_LIST.filter(x=>x!==real)); return { display:w.word, prompt:`เป็น <b>${claim}</b><br>ใช่ไหม?`, correct:showTrue, reveal:`“${w.word}” เป็น${real}` }; }
-function genQFinal(w){ const real=finalLabel(w.final_class); if(!real) return null; const showTrue=Math.random()<0.5; const claim=showTrue?real:randOf(FINAL_TH_LIST.filter(x=>x!==real)); return { display:w.word, prompt:`อยู่ในมาตรา <b>${claim}</b><br>ใช่ไหม?`, correct:showTrue, reveal:`“${w.word}” อยู่ในมาตรา${real}` }; }
+function genQFinal(w){ const real=finalLabel(w.final_class); if(!real) return null; const showTrue=Math.random()<0.5; const claim=showTrue?real:randOf(FINAL_TH_LIST.filter(x=>x!==real)); const lc=lastCons(w.word); return { display:w.word, prompt:`อยู่ในมาตรา <b>${claim}</b><br>ใช่ไหม?`, correct:showTrue, reveal:`“${w.word}” อยู่ในมาตรา${real}` }; }
+function genQFinalTarget(w,target){ const real=finalLabel(w.final_class); if(!real) return null; const targetLabel=finalLabel(target); const correct=(normFinal(w.final_class)===normFinal(target)); const lc=lastCons(w.word); return { display:w.word, prompt:`อยู่ในมาตรา <b>${targetLabel}</b><br>ใช่ไหม?`, correct, reveal:`“${w.word}” อยู่ในมาตรา${real}` }; }
 function genQSpell(w){ if(!isThaiWord(w.word)||[...w.word].length<2) return null; if(Math.random()<0.5){ const bad=makeMisspelling(w.word); if(bad) return { display:bad, prompt:'สะกดถูก<br>หรือไม่?', correct:false, reveal:`สะกดผิด — ที่ถูกคือ “${w.word}”` }; } return { display:w.word, prompt:'สะกดถูก<br>หรือไม่?', correct:true, reveal:`“${w.word}” สะกดถูกแล้ว` }; }
 
-/* ── Word source: Supabase → words.js → embedded ── */
-let _localWords=null,_localSyl=null;
+/* ── Word source: Supabase → words.js / syllables.js → embedded ── */
+let _localWords=null,_sylRows=null,_sylByClass=null;
 function localWordPool(){ if(_localWords) return _localWords; const DB=window.WORD_DB||{}; _localWords=[]; for(const w in DB){ if(w.indexOf(' ')<0) _localWords.push(w); } return _localWords; }
-function localSyllablePool(){ if(_localSyl) return _localSyl; const DB=window.WORD_DB||{}; _localSyl=[]; for(const w in DB){ if(w.indexOf(' ')<0 && DB[w][0]===1) _localSyl.push(w); } return _localSyl.length?_localSyl:localWordPool(); }
 function localRow(w){ const e=window.WORD_DB[w]; return { word:w, syllables:e[0], pos:e[1], live_dead:e[2], final_class:e[3], leading_class:e[4], categories:e[7]||'' }; }
+/* Per-syllable rows for ทายมาตรา: prefer syllables.js (whole DB split), else
+   fall back to 1-syllable words from words.js. */
+function localSyllableRows(){
+  if(_sylRows) return _sylRows;
+  const SD=window.SYLLABLE_DB;
+  if(SD){ _sylRows=Object.keys(SD).map(s=>({word:s,syllables:1,pos:'',final_class:SD[s]||'none',live_dead:'',leading_class:'',categories:''})); }
+  else { const DB=window.WORD_DB||{}; _sylRows=[]; for(const w in DB){ if(w.indexOf(' ')<0 && DB[w][0]===1){ const e=DB[w]; _sylRows.push({word:w,syllables:1,pos:e[1],final_class:e[3]||'none',live_dead:e[2],leading_class:e[4],categories:e[7]||''}); } } }
+  return _sylRows;
+}
+function sylClassIndex(){ if(_sylByClass) return _sylByClass; _sylByClass={}; for(const r of localSyllableRows()){ const k=normFinal(r.final_class); (_sylByClass[k]||(_sylByClass[k]=[])).push(r); } return _sylByClass; }
+/* ~50/50 mix of target-class and other-class syllables for a sub-mode drill. */
+function sampleBalanced(target,count){
+  const rows=localSyllableRows(); if(!rows.length) return [];
+  const inC=sylClassIndex()[normFinal(target)]||[]; const out=[]; const half=Math.ceil(count/2);
+  for(let i=0;i<half && inC.length;i++) out.push(inC[Math.floor(Math.random()*inC.length)]);
+  let guard=0; while(out.length<count && guard++<count*40){ const r=rows[Math.floor(Math.random()*rows.length)]; if(normFinal(r.final_class)!==normFinal(target)) out.push(r); }
+  while(out.length<count && rows.length) out.push(rows[Math.floor(Math.random()*rows.length)]);
+  for(let i=out.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [out[i],out[j]]=[out[j],out[i]]; }
+  return out;
+}
 function embedRows(count,isFinal){ const pool=isFinal?EMBED_WORDS.filter(w=>w.syllables===1):EMBED_WORDS; const out=[]; for(let i=0;i<count;i++) out.push({...randOf(pool)}); return out; }
 async function quizFetch(count){
   const isFinal=modeObj().qkind==='final';
-  const rpc=isFinal?'quiz_syllables':'quiz_words';
-  if(sb){ try{ const {data,error}=await sb.rpc(rpc,{p_count:count}); if(error) throw error; if(data&&data.length) return data; }catch(_){} }
-  const pool=isFinal?localSyllablePool():localWordPool();
-  if(pool.length){ const out=[]; for(let i=0;i<count;i++) out.push(localRow(pool[Math.floor(Math.random()*pool.length)])); return out; }
+  if(sb){ try{
+    let data,error;
+    if(isFinal && subFinal){ ({data,error}=await sb.rpc('quiz_syllables_class',{p_class:subFinal,p_count:count})); }
+    else { ({data,error}=await sb.rpc(isFinal?'quiz_syllables':'quiz_words',{p_count:count})); }
+    if(error) throw error; if(data&&data.length) return data;
+  }catch(_){} }
+  if(isFinal){
+    if(subFinal){ const out=sampleBalanced(subFinal,count); if(out.length) return out; }
+    const rows=localSyllableRows(); if(rows.length){ const out=[]; for(let i=0;i<count;i++) out.push(rows[Math.floor(Math.random()*rows.length)]); return out; }
+  } else {
+    const pool=localWordPool(); if(pool.length){ const out=[]; for(let i=0;i<count;i++) out.push(localRow(pool[Math.floor(Math.random()*pool.length)])); return out; }
+  }
   return embedRows(count,isFinal);
 }
 
@@ -581,19 +620,21 @@ function createQuizCard(w,isNext){
     [['overlay-right','ov-r'],['overlay-left','ov-l'],['overlay-up','ov-u']].forEach(([cls,id])=>{ const d=el('div','overlay '+cls); d.id=id; card.appendChild(d); });
     [['label-right','ถูก'],['label-left','ผิด'],['label-up','ข้าม']].forEach(([cls,txt])=>card.appendChild(el('div','overlay-label '+cls,txt)));
   }
-  card.appendChild(el('div','card-word', q?q.display:w.word));
+  const wordEl=el('div','card-word', q?q.display:w.word); fitWord(wordEl, q?q.display:w.word); card.appendChild(wordEl);
   if(sylCnt>1){ const dots=el('div','syl-dots'); for(let i=0;i<Math.min(sylCnt,6);i++) dots.appendChild(el('span','syl-dot filled')); card.appendChild(dots); }
   card.appendChild(el('div','card-divider'));
   const p=el('div','card-prompt'); p.innerHTML=q?q.prompt:'—'; card.appendChild(p);
   return card;
 }
+/* Scale the word down by length so long Thai words never clip the card. */
+function fitWord(node,text){ const n=[...String(text)].length; const fs = n<=4?2.9 : n<=7?2.3 : n<=11?1.8 : n<=15?1.4 : 1.15; node.style.fontSize=fs+'rem'; }
 
 /* ╔══ ANSWERING ══╗ */
 function doQuizSwipe(dir){
   if(!activeCard||!currentWord) return;
   const q=currentWord._q;
   if(dir==='up'){
-    quizStreak=0; quizSkip++; glowCount=0; setGlow();
+    quizStreak=0; quizSkip++; fadeGlow(0.10);
     let pts=0; if(quizSkip%3===0){ pts=-1; quizScore+=pts; }
     roundLog.push({word:q?q.display:currentWord.word, reveal:q?q.reveal:'', outcome:'skip'});
     roundCount++; roundScore+=pts; bumpModeAnswered(); updateRoundProgress();
@@ -608,12 +649,12 @@ function doQuizSwipe(dir){
   if(correct){
     quizStreak++; pts=1;
     if(quizStreak%3===0){ pts+=1; roundStake++; }
-    quizScore+=pts; roundCorrect++; glowCount++; setGlow(); playGlow(glowCount);
+    quizScore+=pts; roundCorrect++; bumpGlow(pts); playGlow(quizStreak);
     if(quizStreak>quizBest) quizBest=quizStreak;
     if(quizStreak>profile.bestStreak) profile.bestStreak=quizStreak;
     gainXP(10+(quizStreak%3===0?5:0));
     reactMascot(quizStreak%3===0?'excited':'happy');
-  } else { pts=-1; quizScore+=pts; quizStreak=0; glowCount=0; setGlow(); reactMascot('sad'); }
+  } else { pts=-1; quizScore+=pts; quizStreak=0; fadeGlow(0.22); reactMascot('sad'); }
   roundLog.push({word:q?q.display:currentWord.word, reveal:q?q.reveal:'', outcome:correct?'correct':'wrong'});
   roundCount++; roundScore+=pts; updateRoundProgress();
   quizFlash(pts, correct?'ถูกต้อง':'ผิด', q?q.reveal:'');
@@ -630,13 +671,19 @@ function refreshScoreDisplay(){ updateRoundProgress(); }
 function gainXP(n){ profile.xp+=n; saveProfile(); }
 
 /* ── HUD meter ── */
-function setGlow(){ document.getElementById('arena').style.setProperty('--glow',Math.min(glowCount/ROUND_SIZE,1).toFixed(3)); }
+/* Growing light = momentum that builds with points earned + answer speed,
+   softens on a miss, and slowly decays so it visibly "breathes". */
+function setGlow(){ document.getElementById('arena').style.setProperty('--glow',Math.max(0,Math.min(1,glowLevel)).toFixed(3)); }
+function bumpGlow(pts){ const now=(window.performance&&performance.now())||0; const dt=lastAnsTs?(now-lastAnsTs):2500; lastAnsTs=now; const fast=Math.max(0,Math.min(1,(2500-dt)/2000)); glowLevel=Math.min(1, glowLevel + 0.07*Math.max(1,pts) + 0.10*fast); setGlow(); }
+function fadeGlow(amount){ glowLevel=Math.max(0, glowLevel-amount); lastAnsTs=(window.performance&&performance.now())||0; setGlow(); }
+function startGlowDecay(){ if(glowDecayTimer) return; glowDecayTimer=setInterval(()=>{ if(curScreen!=='arena') return; if(glowLevel>0){ glowLevel=Math.max(0, glowLevel-0.02); setGlow(); } },700); }
+function stopGlowDecay(){ if(glowDecayTimer){ clearInterval(glowDecayTimer); glowDecayTimer=null; } }
 function updateRoundProgress(){
   document.getElementById('meterFill').style.width=(roundCount/ROUND_SIZE*100)+'%';
   document.getElementById('meterCount').textContent=`รอบนี้ ${roundCount}/${ROUND_SIZE}`;
   document.getElementById('meterScore').textContent=`⭐${quizScore} · 🔥${quizStreak}`;
 }
-function resetRound(){ roundCount=0; roundCorrect=0; roundScore=0; roundStake=0; roundLog=[]; glowCount=0; setGlow(); updateRoundProgress(); }
+function resetRound(){ roundCount=0; roundCorrect=0; roundScore=0; roundStake=0; roundLog=[]; glowLevel=0; lastAnsTs=0; setGlow(); updateRoundProgress(); }
 
 /* ── Streak celebration ── */
 function triggerStreakCeleb(s){
@@ -723,14 +770,17 @@ function leaveSplash(){ hideFs('splash'); if(!profile.onboarded){ startOnboardin
 
 /* ╔══ SCREENS / NAV ══╗ */
 function showScreen(name){ curScreen=name; document.getElementById('homeScreen').classList.toggle('active',name==='home'); document.getElementById('arenaScreen').classList.toggle('active',name==='arena'); }
-function goHome(){ showScreen('home'); curTab='home'; setTab('home'); }
+function goHome(){ stopGlowDecay(); showScreen('home'); curTab='home'; setTab('home'); }
 async function enterArena(id){
   modeId=id; document.body.dataset.mode=id;
-  document.getElementById('modeChip').textContent=modeObj().th+' ▾';
+  if(id!=='quiz_final') subFinal=null;
+  const subLabel=(id==='quiz_final'&&subFinal)?(' · '+(SUB_FINALS.find(s=>s.db===subFinal)||{}).short):'';
+  document.getElementById('modeChip').textContent=modeObj().th+subLabel+' ▾';
   document.getElementById('modeChip').style.background=modeObj().color;
   if(!profile.modes.includes(id)){ profile.modes.push(id); saveProfile(); if(profile.modes.length>=3) unlock('allmodes'); }
   queue=[]; currentWord=null; showScreen('arena'); resetRound(); setHudMascot('idle'); resetIdle();
   setLoading(true); await refill(true); setLoading(false); renderCards();
+  startGlowDecay();
 }
 function setLoading(on){ document.getElementById('loadingState').classList.toggle('visible',on); }
 
@@ -751,7 +801,8 @@ function renderHome(){ if(curScreen==='home') setTab(curTab); }
 function homeCards(){
   return MODES.map(m=>{
     const ans=profile.modeAnswered[m.id]||0, pct=Math.min(100,Math.round(ans/50*100));
-    return `<button class="mode-big" data-m="${m.id}" onclick="enterArena('${m.id}')"><h3>${m.th}</h3><p>${m.sub}</p><div class="pbar"><div style="width:${pct}%"></div></div></button>`;
+    const onclick=m.id==='quiz_final'?'openSubPicker()':`enterArena('${m.id}')`;
+    return `<button class="mode-big" data-m="${m.id}" onclick="${onclick}"><h3>${m.th}</h3><p>${m.sub}</p><div class="pbar"><div style="width:${pct}%"></div></div></button>`;
   }).join('');
 }
 function statsPanel(){
@@ -829,8 +880,22 @@ function buildModePicker(){
   }
 }
 function openModePicker(){ buildModePicker(); document.getElementById('backdrop').classList.add('visible'); document.getElementById('modePicker').classList.add('visible'); openSheet='mode'; }
-function hideAllSheets(){ document.getElementById('backdrop').classList.remove('visible'); document.getElementById('modePicker').classList.remove('visible'); openSheet=null; snapBack(); }
-async function selectMode(id){ hideAllSheets(); if(id===modeId) return; enterArena(id); }
+function hideAllSheets(){ document.getElementById('backdrop').classList.remove('visible'); document.getElementById('modePicker').classList.remove('visible'); document.getElementById('subPicker').classList.remove('visible'); openSheet=null; snapBack(); }
+async function selectMode(id){ if(id==='quiz_final'){ openSubPicker(); return; } hideAllSheets(); if(id===modeId) return; enterArena(id); }
+
+/* ── Sub-mode picker (per-มาตรา drill) ── */
+function buildSubPicker(){
+  const c=document.getElementById('spRows'); c.innerHTML='';
+  for(const s of SUB_FINALS){
+    const cur=(modeId==='quiz_final' && subFinal===s.db && curScreen==='arena');
+    const b=document.createElement('button');
+    b.className='mp-row'+(cur?' current':'');
+    b.innerHTML=`<span class="bar" style="background:#2D7FF9"></span><span class="mp-info"><span class="mp-name">${s.th}</span><span class="mp-sub">${s.db?'เฉพาะ'+s.short:'ทุกมาตราปนกัน'}</span></span>${cur?'<span class="mp-check">✓</span>':''}`;
+    b.onclick=()=>selectSubFinal(s.db); c.appendChild(b);
+  }
+}
+function openSubPicker(){ buildSubPicker(); document.getElementById('modePicker').classList.remove('visible'); document.getElementById('backdrop').classList.add('visible'); document.getElementById('subPicker').classList.add('visible'); openSheet='sub'; }
+function selectSubFinal(db){ hideAllSheets(); subFinal=db||null; enterArena('quiz_final'); }
 
 /* ── Report ── */
 let _lastReport='';
