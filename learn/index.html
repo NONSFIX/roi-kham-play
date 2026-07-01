@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เรียนรู้ · ร้อยคำ — หลักภาษาไทยฉบับผู้เล่น</title>
+<meta name="description" content="คู่มืออ้างอิงไวยากรณ์ไทยสำหรับผู้เล่นร้อยคำ">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&family=Prompt:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="."><span class="site-title">เรียนรู้</span><span class="wordmark">· ร้อยคำ</span></a>
+    <nav class="topnav" id="topnav"><a href="final-consonants/" class="">มาตราตัวสะกด</a><a href="consonant-classes/" class="">ไตรยางศ์</a><a href="vowel-forms/" class="">รูปสระ ร หัน และ บัน</a><a href="parts-of-speech/" class="">ชนิดของคำ</a><a href="word-nature/" class="">ลักษณะคำและระดับภาษา</a><a href="word-formation/" class="">การสร้างคำ</a></nav>
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="topnav">เมนู</button>
+    <a class="play-link" href="../">เล่นเกม →</a>
+  </div>
+</div>
+
+<div class="page" style="grid-template-columns:1fr;">
+  <main style="padding-top:40px;">
+    <div class="page-head">
+      <p class="eyebrow">เรียนรู้ · ร้อยคำ</p>
+      <h1>หลักภาษาไทย ฉบับผู้เล่น</h1>
+      <p>คู่มืออ้างอิงไวยากรณ์ไทย 6 หมวด ตั้งแต่มาตราตัวสะกด ชนิดของคำ ไปจนถึงการสร้างคำ — อ่านเพื่อเข้าใจ หรือย้อนดูตอนสงสัยว่าทำไมคำตอบในเกมถึงเป็นแบบนั้น</p>
+    </div>
+    <div class="index-grid">
+      <a class="index-card" href="final-consonants/"><h2>มาตราตัวสะกด</h2><p>ตัวสะกดตรง/ไม่ตรงมาตรา และมาตราทั้ง 9 แม่</p></a>
+      <a class="index-card" href="consonant-classes/"><h2>ไตรยางศ์</h2><p>อักษรกลาง สูง ต่ำ และการผันวรรณยุกต์</p></a>
+      <a class="index-card" href="vowel-forms/"><h2>รูปสระ ร หัน และ บัน</h2><p>ประวิสรรชนีย์ คำที่ใช้ "บัน" และ "บรร"</p></a>
+      <a class="index-card" href="parts-of-speech/"><h2>ชนิดของคำ</h2><p>คำนาม สรรพนาม กริยา วิเศษณ์ บุพบท สันธาน อุทาน</p></a>
+      <a class="index-card" href="word-nature/"><h2>ลักษณะคำและระดับภาษา</h2><p>คำเป็น/ตาย ราชาศัพท์ คำยืม ภาษาพูด/เขียน</p></a>
+      <a class="index-card" href="word-formation/"><h2>การสร้างคำ</h2><p>คำประสม ซ้ำ ซ้อน สมาส ทับศัพท์ ศัพท์บัญญัติ</p></a>
+    </div>
+  </main>
+</div>
+<footer>เรียนรู้ · ร้อยคำ — เนื้อหาไวยากรณ์ไทยสำหรับผู้เล่น</footer>
+<script>
+document.getElementById('navToggle').addEventListener('click',function(){
+  var n=document.getElementById('topnav'); var open=n.classList.toggle('open');
+  this.setAttribute('aria-expanded',open);
+});
+</script>
+</body>
+</html>

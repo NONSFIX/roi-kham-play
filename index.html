@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ร้อยคำ — เกมทายคำ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&family=Prompt:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
@@ -43,12 +45,11 @@ body[data-mode="quiz_spell"] { --mode:#FF8FAB; }
 body{
   font-family:'Sarabun','Tahoma',sans-serif;
   background:var(--paper); color:var(--ink);
-  height:100vh; overflow:hidden;
+  height:100vh; height:100dvh; overflow:hidden;
   font-size:15px; user-select:none; -webkit-user-select:none;
   -webkit-tap-highlight-color:transparent;
 }
 button{ font-family:inherit; color:var(--ink); cursor:pointer; }
-.wordmark{ font-family:'Prompt',sans-serif; }
 
 /* ── Pills & buttons ── */
 .pill{ border:var(--bd) solid var(--ink); border-radius:99px; font-weight:800; box-shadow:var(--sh-sm); transition:transform 80ms, box-shadow 80ms; }
@@ -59,7 +60,7 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 .link-btn{ background:none; border:none; font:600 14px 'Sarabun'; color:var(--mute); text-decoration:underline; }
 
 /* ════════ APP SHELL ════════ */
-#app{ height:100vh; position:relative; overflow:hidden; display:flex; flex-direction:column; }
+#app{ height:100vh; height:100dvh; position:relative; overflow:hidden; display:flex; flex-direction:column; }
 .screen{ position:absolute; inset:0; display:none; flex-direction:column; }
 .screen.active{ display:flex; }
 
@@ -74,12 +75,11 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 #meterFill{ height:100%; background:var(--mode); width:100%; transform-origin:left; transform:scaleX(0); transition:transform 450ms ease, background 250ms ease; }
 .meter-arrow{ width:0; height:0; border-top:10px solid transparent; border-bottom:10px solid transparent; border-left:9px solid var(--ink); margin-left:-1px; }
 .meter-meta{ display:flex; justify-content:space-between; font-weight:800; font-size:11px; color:var(--mute); }
-.meter-meta .mm-round{ color:var(--mode); }
 .home-btn{ width:44px; height:44px; flex-shrink:0; background:var(--surface); border:var(--bd) solid var(--ink); border-radius:12px; box-shadow:var(--sh-sm); display:flex; align-items:center; justify-content:center; }
 .home-btn:active{ transform:translate(3px,3px); box-shadow:0 0 0 var(--ink); }
 .home-btn svg{ width:20px; height:20px; }
 .mode-chip-row{ display:flex; justify-content:center; padding:2px 14px 0; flex-shrink:0; }
-.mode-chip{ position:relative; background:var(--mode); color:var(--ink); border:2px solid var(--ink); border-radius:99px; padding:9px 14px; font-weight:800; font-size:12px; box-shadow:2px 2px 0 var(--ink); transition:transform 80ms; }
+.mode-chip{ position:relative; background:var(--mode); color:var(--ink); border:2px solid var(--ink); border-radius:99px; padding:11px 14px; font-weight:800; font-size:12px; box-shadow:2px 2px 0 var(--ink); transition:transform 80ms; }
 .mode-chip::before{ content:''; position:absolute; inset:-8px -4px; }
 .mode-chip:active{ transform:translate(2px,2px); box-shadow:0 0 0 var(--ink); }
 
@@ -91,6 +91,7 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
   opacity:calc(.06 + var(--glow,0) * 0.55);
   mix-blend-mode:multiply; pointer-events:none; z-index:0;
   transition:transform 600ms ease, opacity 600ms ease;
+  will-change:transform, opacity;
 }
 #arena > .card, #bigFlash{ z-index:1; }
 
@@ -130,10 +131,11 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 @keyframes bigPop{ 0%{opacity:0;transform:translate(-50%,-25%) scale(.5);} 22%{opacity:1;transform:translate(-50%,-50%) scale(1.15);} 55%{opacity:1;transform:translate(-50%,-60%) scale(1);} 100%{opacity:0;transform:translate(-50%,-130%) scale(.95);} }
 
 /* ── Pill row ── */
-.hint-row{ flex-shrink:0; padding:8px 16px 6px; display:flex; gap:10px; align-items:center; justify-content:center; }
+.hint-row{ flex-shrink:0; padding:8px 16px 6px; display:flex; gap:10px; align-items:center; justify-content:center; transition:opacity 200ms; }
+.hint-row.hint-disabled{ opacity:.4; pointer-events:none; }
 .hint-btn{ display:flex; align-items:center; justify-content:center; gap:6px; padding:13px 0; font-size:15px; }
 .hint-wrong{ background:var(--wrong); color:#fff; flex:1; }
-.hint-skip{ background:var(--surface); color:var(--ink); padding:13px 16px; }
+.hint-skip{ background:var(--ink); color:#fff; padding:13px 18px; }
 .hint-right{ background:var(--correct); color:#fff; flex:1; }
 .report-btn{ display:block; margin:0 auto; padding:10px 14px; background:none; border:none; color:var(--mute); font-size:12px; text-decoration:underline; }
 
@@ -153,13 +155,13 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 .home-hi{ font-weight:800; font-size:24px; }
 .score-chip{ background:var(--ink); color:var(--yellow); border-radius:99px; padding:6px 14px; font-weight:800; font-size:14px; }
 .home-body{ flex:1; overflow-y:auto; padding:12px 22px 16px; display:flex; flex-direction:column; gap:12px; }
-.mode-big{ border:var(--bd) solid var(--ink); border-radius:18px; box-shadow:var(--sh); padding:15px; color:#fff; text-align:left; transition:transform 80ms, box-shadow 80ms; }
+.mode-big{ border:var(--bd) solid var(--ink); border-radius:18px; box-shadow:var(--sh); padding:15px; color:var(--ink); text-align:left; transition:transform 80ms, box-shadow 80ms; }
 .mode-big:active{ transform:translate(4px,4px); box-shadow:0 0 0 var(--ink); }
 .mode-big[data-m="quiz_pos"]{ background:var(--orange); }
 .mode-big[data-m="quiz_final"]{ background:var(--blue); }
-.mode-big[data-m="quiz_spell"]{ background:var(--pink); color:var(--ink); }
+.mode-big[data-m="quiz_spell"]{ background:var(--pink); }
 .mode-big h3{ font-size:20px; font-weight:800; }
-.mode-big p{ font-size:12px; opacity:.92; margin:3px 0 10px; }
+.mode-big p{ font-size:12px; margin:3px 0 10px; }
 .mode-big .pbar{ height:9px; background:rgba(255,255,255,.35); border:2px solid var(--ink); border-radius:99px; overflow:hidden; }
 .mode-big[data-m="quiz_spell"] .pbar{ background:rgba(0,0,0,.12); }
 .mode-big .pbar > div{ height:100%; background:var(--yellow); }
@@ -182,9 +184,9 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 .badge-desc{ font-size:10px; color:var(--mute); margin-top:3px; line-height:1.3; }
 /* bottom nav */
 .bottom-nav{ flex-shrink:0; height:calc(62px + env(safe-area-inset-bottom, 0px)); border-top:var(--bd) solid var(--ink); background:var(--surface); display:flex; align-items:flex-start; justify-content:space-around; padding:11px 12px env(safe-area-inset-bottom, 0px); }
-.nav-item{ background:none; border:none; display:flex; align-items:center; gap:7px; padding:0; opacity:.5; }
+.nav-item{ background:none; border:none; display:flex; align-items:center; justify-content:center; gap:7px; padding:0; opacity:.5; min-width:44px; min-height:44px; }
 .nav-item svg{ width:22px; height:22px; }
-.nav-item.active{ opacity:1; background:var(--orange); color:var(--ink); border:var(--bd) solid var(--ink); border-radius:99px; box-shadow:2px 2px 0 var(--ink); height:40px; padding:0 16px; font-weight:800; font-size:14px; }
+.nav-item.active{ opacity:1; background:var(--orange); color:var(--ink); border:var(--bd) solid var(--ink); border-radius:99px; box-shadow:2px 2px 0 var(--ink); height:44px; padding:0 16px; font-weight:800; font-size:14px; }
 .nav-item.active svg{ width:20px; height:20px; }
 .nav-label{ display:none; }
 .nav-item.active .nav-label{ display:inline; }
@@ -251,7 +253,8 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 .sheet.visible{ transform:translateY(0); }
 .sheet-handle{ width:42px; height:5px; background:var(--ink); border-radius:99px; margin:0 auto 14px; opacity:.3; }
 .sheet-title{ font-weight:700; font-size:11px; letter-spacing:.18em; color:var(--mute2); text-align:center; margin-bottom:14px; }
-.mp-row{ background:var(--surface); border:var(--bd) solid var(--ink); border-radius:16px; box-shadow:var(--sh-sm); padding:13px 15px; display:flex; align-items:center; gap:12px; margin-bottom:11px; width:100%; text-align:left; }
+.mp-row{ background:var(--surface); border:var(--bd) solid var(--ink); border-radius:16px; box-shadow:var(--sh-sm); padding:13px 15px; display:flex; align-items:center; gap:12px; margin-bottom:11px; width:100%; text-align:left; transition:transform 80ms, box-shadow 80ms; }
+.mp-row:active{ transform:translate(3px,3px); box-shadow:0 0 0 var(--ink); }
 .mp-row.current{ box-shadow:3px 3px 0 var(--mode); }
 .mp-row .bar{ width:12px; height:32px; border-radius:5px; border:2px solid var(--ink); flex-shrink:0; }
 .mp-row .mp-info{ flex:1; }
@@ -279,9 +282,9 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 #toast{ position:fixed; bottom:96px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; padding:11px 20px; border-radius:99px; font-size:13px; font-weight:700; opacity:0; pointer-events:none; transition:opacity 200ms, transform 200ms; z-index:39; max-width:90vw; text-align:center; }
 #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 #nickModal .ob-text, #nickModal .link-btn{ color:var(--pink-ink); }
-*:focus-visible{ outline:3px solid var(--ink); outline-offset:3px; border-radius:4px; }
-.pill:focus-visible, .btn-primary:focus-visible{ outline-offset:5px; }
-.mode-chip:focus-visible{ outline-offset:6px; }
+*:focus-visible{ outline:3px solid var(--orange); outline-offset:2px; border-radius:4px; }
+.pill:focus-visible, .btn-primary:focus-visible{ outline-offset:3px; }
+.mode-chip:focus-visible{ outline-offset:4px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; transition-delay:0ms !important; }
   #bgGlow{ display:none !important; }
@@ -295,18 +298,18 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
   <!-- ════ HOME ════ -->
   <div class="screen" id="homeScreen">
     <div class="home-top">
-      <div class="home-hi" id="homeHi">สวัสดี 👋</div>
+      <h1 class="home-hi" id="homeHi">สวัสดี 👋</h1>
       <div class="score-chip" id="homeScore">⭐ 0</div>
     </div>
     <div class="home-body" id="homeBody"></div>
     <div class="bottom-nav" id="bottomNav">
-      <button class="nav-item active" data-tab="home" onclick="setTab('home')">
+      <button class="nav-item active" data-tab="home" onclick="setTab('home')" aria-label="หน้าแรก">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 L12 4 L20 11 V20 H4 Z"/></svg><span class="nav-label">หน้าแรก</span></button>
-      <button class="nav-item" data-tab="stats" onclick="setTab('stats')">
+      <button class="nav-item" data-tab="stats" onclick="setTab('stats')" aria-label="สถิติ">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20 V12 M12 20 V5 M19 20 V9"/></svg><span class="nav-label">สถิติ</span></button>
-      <button class="nav-item" data-tab="badges" onclick="setTab('badges')">
+      <button class="nav-item" data-tab="badges" onclick="setTab('badges')" aria-label="ตรารางวัล">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 H17 V9 A5 5 0 0 1 7 9 Z M9 20 H15 M12 14 V20"/></svg><span class="nav-label">ตรา</span></button>
-      <button class="nav-item" data-tab="profile" onclick="setTab('profile')">
+      <button class="nav-item" data-tab="profile" onclick="setTab('profile')" aria-label="โปรไฟล์">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="5"/><path d="M9 13 L7 21 L12 18 L17 21 L15 13"/></svg><span class="nav-label">โปรไฟล์</span></button>
     </div>
   </div>
@@ -323,15 +326,15 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 L12 4 L20 11 V20 H4 Z"/></svg></button>
     </div>
     <div class="mode-chip-row"><button class="mode-chip" id="modeChip" onclick="openModePicker()">ชนิดคำ <span aria-hidden="true">▾</span></button></div>
-    <div id="arena">
+    <div id="arena" aria-live="polite" aria-atomic="false">
       <div id="bgGlow"></div>
       <div id="loadingState"><div class="spinner"></div><p style="color:var(--mute);font-weight:600">กำลังโหลดคำ…</p></div>
       <div id="emptyState"><div class="em-mascot" id="emptyMascot"></div><h2>หมดคำในโหมดนี้</h2><p>ลองสลับโหมด<br>หรือเชื่อมต่ออินเทอร์เน็ตอีกครั้ง</p><button class="pill" style="padding:11px 26px;font-size:15px;background:var(--ink);color:#fff" onclick="openModePicker()">สลับโหมด</button></div>
       <div id="bigFlash"></div>
     </div>
-    <div class="hint-row">
+    <div class="hint-row" id="hintRow">
       <button class="pill hint-btn hint-wrong" onclick="doSwipe('left')">✗ ผิด</button>
-      <button class="pill hint-btn hint-skip" onclick="doSwipe('up')">↑</button>
+      <button class="pill hint-btn hint-skip" onclick="doSwipe('up')">↑ ข้าม</button>
       <button class="pill hint-btn hint-right" onclick="doSwipe('right')">✓ ถูก</button>
     </div>
     <button class="report-btn" onclick="reportWord()">รายงานว่าเฉลยผิด</button>
@@ -339,11 +342,11 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 </div>
 
 <!-- ════ SPLASH ════ -->
-<div class="fs" id="splash" role="dialog" aria-modal="true" aria-label="ยินดีต้อนรับสู่ร้อยคำ">
+<div class="fs active" id="splash" role="dialog" aria-modal="true" aria-label="ยินดีต้อนรับสู่ร้อยคำ">
   <div class="statusbar" style="color:#fff"><span>9:41</span><span><i></i><i></i><i></i></span></div>
   <div class="fs-body">
     <div class="fs-mascot" id="splashMascot"></div>
-    <div class="big-word">ร้อยคำ</div>
+    <h1 class="big-word">ร้อยคำ</h1>
     <div class="underline"></div>
     <div class="tag">ปัดการ์ด ทายคำ สะสมสตรีค<br>ฝึกภาษาไทยแบบเร็ว ๆ</div>
   </div>
@@ -364,9 +367,9 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 <div class="fs" id="nickModal" role="dialog" aria-modal="true" aria-labelledby="nick-heading">
   <div class="statusbar"><span>9:41</span><span><i></i><i></i><i></i></span></div>
   <div class="fs-body">
-    <div class="ob-title" id="nick-heading">เรียกคุณว่า?</div>
+    <h2 class="ob-title" id="nick-heading">เรียกคุณว่า?</h2>
     <div class="ob-text">ใส่ชื่อเล่นเพื่อขึ้นกระดานคะแนน หรือข้ามไปเล่นแบบไม่ระบุชื่อก็ได้</div>
-    <input id="nickInput" class="prof-field" maxlength="16" placeholder="พิมพ์ชื่อเล่น…" autocomplete="off" style="background:#fff">
+    <input id="nickInput" class="prof-field" maxlength="16" placeholder="พิมพ์ชื่อเล่น…" aria-label="ชื่อเล่น" autocomplete="off" style="background:#fff">
     <button class="btn-primary" onclick="saveNick()">บันทึก</button>
     <button class="link-btn" onclick="skipNick()">ข้าม เล่นเลย</button>
   </div>
@@ -378,7 +381,7 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
   <div class="fs-body">
     <div class="fs-mascot" id="msMascot"></div>
     <div class="ms-num" id="msNum">100</div>
-    <div class="ob-title" style="color:#fff">คำแล้ว!</div>
+    <h2 class="ob-title" style="color:#fff">คำแล้ว!</h2>
     <div class="ob-text" style="color:#fff;opacity:.95" id="msText">ตอบถูกครบ 100 คำ สุดยอดไปเลย เดินหน้าต่อ!</div>
     <button class="btn-primary accent" style="width:auto;padding:13px 30px" onclick="closeMilestone()">ลุยต่อ</button>
   </div>
@@ -390,7 +393,7 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
   <div class="fs-body">
     <div class="ach-eyebrow">ปลดล็อกตรา</div>
     <div class="ach-tile" id="achGlyph">★</div>
-    <div class="ob-title" style="color:#fff" id="achName">สตรีคเดือด ×10</div>
+    <h2 class="ob-title" style="color:#fff" id="achName">สตรีคเดือด ×10</h2>
     <div class="ob-text" style="color:#fff;opacity:.95" id="achDesc">ตอบถูกติดกัน 10 คำเป็นครั้งแรก</div>
     <span class="ach-xp">+25 XP</span>
     <button class="btn-primary" style="width:auto;padding:12px 28px;margin-top:6px" onclick="hideFs('achievement')">เยี่ยม! →</button>
@@ -425,7 +428,7 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 <!-- ════ ROUND SUMMARY ════ -->
 <div id="roundSummary" role="dialog" aria-modal="true" aria-labelledby="rs-title">
   <div class="rs-card">
-    <div class="rs-title" id="rs-title">จบรอบ! 🎉</div>
+    <h2 class="rs-title" id="rs-title">จบรอบ! 🎉</h2>
     <div class="rs-stats" id="rsStats"></div>
     <div class="rs-ans-head">เฉลยรอบนี้</div>
     <div class="rs-answers" id="rsAnswers"></div>
@@ -436,10 +439,10 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 
 <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="words.js"></script>
-<script src="syllables.js"></script>
-<script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="words.js" defer></script>
+<script src="syllables.js" defer></script>
+<script defer>
 'use strict';
 
 /* ── CONFIG ── */
@@ -487,9 +490,9 @@ const BADGES = [
   {id:'streak5', glyph:'✦', name:'ไฟแรง',      desc:'สตรีคถึง 5'},
   {id:'streak10',glyph:'🔥', name:'สตรีคเดือด ×10', desc:'ตอบถูกติดกัน 10 คำ'},
   {id:'perfect', glyph:'◆', name:'รอบสมบูรณ์',  desc:'ถูก 10/10 ในรอบเดียว'},
-  {id:'s100',    glyph:'●', name:'ร้อยแต้ม',    desc:'ทำคะแนนถึง 100'},
-  {id:'s250',    glyph:'⬢', name:'สองร้อยห้า',  desc:'ทำคะแนนถึง 250'},
-  {id:'s500',    glyph:'⬣', name:'ห้าร้อย',     desc:'ทำคะแนนถึง 500'},
+  {id:'s100',    glyph:'●', name:'หนึ่งร้อยคะแนน',      desc:'ทำคะแนนถึง 100'},
+  {id:'s250',    glyph:'⬢', name:'สองร้อยห้าสิบคะแนน', desc:'ทำคะแนนถึง 250'},
+  {id:'s500',    glyph:'⬣', name:'ห้าร้อยคะแนน',       desc:'ทำคะแนนถึง 500'},
   {id:'ans50',   glyph:'▲', name:'ขยันตอบ',     desc:'ตอบครบ 50 ข้อ'},
   {id:'allmodes',glyph:'✚', name:'ครบทุกโหมด',  desc:'เล่นครบทั้ง 3 โหมด'},
   {id:'named',   glyph:'☆', name:'มีตัวตน',     desc:'ตั้งชื่อบนกระดานผู้นำ'},
@@ -529,6 +532,21 @@ function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg
 const randOf = a => a[Math.floor(Math.random()*a.length)];
 function showFs(id){ const el=document.getElementById(id); el.classList.add('active'); const f=el.querySelector('button:not([disabled]),input:not([disabled]),[tabindex="0"]'); if(f) setTimeout(()=>f.focus(),80); }
 function hideFs(id){ document.getElementById(id).classList.remove('active'); }
+function trapFocus(container){
+  const focusables=container.querySelectorAll('button:not([disabled]),[href],input:not([disabled]),select,textarea,[tabindex]:not([tabindex="-1"])');
+  if(!focusables.length) return null;
+  const first=focusables[0], last=focusables[focusables.length-1];
+  function handler(e){
+    if(e.key!=='Tab') return;
+    if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+  }
+  container.addEventListener('keydown', handler);
+  return ()=>container.removeEventListener('keydown', handler);
+}
+let _releaseFocusTrap=null;
+function setFocusTrap(id){ if(_releaseFocusTrap){ _releaseFocusTrap(); } _releaseFocusTrap=trapFocus(document.getElementById(id)); }
+function releaseFocusTrap(){ if(_releaseFocusTrap){ _releaseFocusTrap(); _releaseFocusTrap=null; } }
 function anyFsOpen(){ return ['splash','onboarding','nickModal','milestone','achievement'].some(id=>document.getElementById(id).classList.contains('active')); }
 function escapeHtml(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
@@ -837,9 +855,11 @@ function statsPanel(){
 }
 async function loadStatsRank(){ const r=await fetchLeaderboardRank(); const el2=document.getElementById('lbRank'); if(el2) el2.textContent = r?('#'+r) : (profile.name?'—':'— (ยังไม่ตั้งชื่อ)'); }
 function badgesPanel(){
-  return `<div class="panel"><h3>ตรารางวัล</h3><div class="badge-grid">`+
-    BADGES.map(b=>{ const e=hasBadge(b.id); return `<div class="badge ${e?'earned':'locked'}"><div class="badge-glyph">${e?b.glyph:'○'}</div><div class="badge-name">${b.name}</div><div class="badge-desc">${e?b.desc:'ยังไม่ปลดล็อก'}</div></div>`; }).join('')+
-    `</div></div>`;
+  const earned=BADGES.filter(b=>hasBadge(b.id));
+  const grid=earned.length
+    ? `<div class="badge-grid">`+earned.map(b=>`<div class="badge earned"><div class="badge-glyph">${b.glyph}</div><div class="badge-name">${b.name}</div><div class="badge-desc">${b.desc}</div></div>`).join('')+`</div>`
+    : `<p style="color:var(--mute);font-size:13px;line-height:1.7;text-align:center;padding:8px 0">ยังไม่ได้ตรารางวัลเลย เล่นต่อไปเพื่อปลดล็อก!</p>`;
+  return `<div class="panel"><h3>ตรารางวัล ${earned.length}/${BADGES.length}</h3>${grid}</div>`;
 }
 function profilePanel(){
   return `<div class="panel"><h3>โปรไฟล์</h3>
@@ -849,6 +869,7 @@ function profilePanel(){
     <div style="margin-top:14px"><button class="btn-primary" onclick="openNick('home')">${profile.name?'เปลี่ยนชื่อ':'ตั้งชื่อขึ้นกระดานผู้นำ'}</button></div>
     <div class="stat-row" style="margin-top:8px"><span>เพลงประกอบ</span><button class="pill" style="background:${profile.music?'var(--ink)':'var(--surface)'};color:${profile.music?'#fff':'var(--ink)'};padding:6px 16px;font-size:13px" onclick="toggleMusic()">${profile.music?'เปิด ♪':'ปิด'}</button></div>
     <div style="margin-top:10px"><button class="btn-primary" style="background:var(--surface);color:var(--ink)" onclick="replayOnboarding()">ดูวิธีเล่นอีกครั้ง</button></div>
+    <div style="margin-top:10px"><a class="btn-primary" style="background:var(--orange);color:var(--ink);display:block;text-align:center;text-decoration:none;box-sizing:border-box" href="learn/" target="_blank" rel="noopener">เรียนรู้หลักภาษาไทย →</a></div>
   </div>`;
 }
 
@@ -856,8 +877,9 @@ function profilePanel(){
 function renderCards(){
   const arena=document.getElementById('arena');
   arena.querySelectorAll('.card').forEach(c=>c.remove());
-  if(queue.length===0){ document.getElementById('emptyState').classList.add('visible'); activeCard=null; currentWord=null; return; }
+  if(queue.length===0){ document.getElementById('emptyState').classList.add('visible'); document.getElementById('hintRow').classList.add('hint-disabled'); activeCard=null; currentWord=null; return; }
   document.getElementById('emptyState').classList.remove('visible');
+  document.getElementById('hintRow').classList.remove('hint-disabled');
   currentWord=queue[0];
   if(queue.length>1) arena.appendChild(createQuizCard(queue[1],true));
   const card=createQuizCard(queue[0],false);
@@ -900,10 +922,10 @@ function buildModePicker(){
     b.onclick=()=>selectMode(m.id); c.appendChild(b);
   }
 }
-function openModePicker(){ buildModePicker(); document.getElementById('backdrop').classList.add('visible'); document.getElementById('modePicker').classList.add('visible'); openSheet='mode'; setTimeout(()=>{ const f=document.querySelector('#modePicker button'); if(f) f.focus(); },80); }
-function hideAllSheets(){ document.getElementById('backdrop').classList.remove('visible'); document.getElementById('modePicker').classList.remove('visible'); document.getElementById('subPicker').classList.remove('visible'); document.getElementById('exitConfirm').classList.remove('visible'); openSheet=null; snapBack(); }
+function openModePicker(){ buildModePicker(); document.getElementById('backdrop').classList.add('visible'); document.getElementById('modePicker').classList.add('visible'); openSheet='mode'; setTimeout(()=>{ const f=document.querySelector('#modePicker button'); if(f) f.focus(); setFocusTrap('modePicker'); },80); }
+function hideAllSheets(){ document.getElementById('backdrop').classList.remove('visible'); document.getElementById('modePicker').classList.remove('visible'); document.getElementById('subPicker').classList.remove('visible'); document.getElementById('exitConfirm').classList.remove('visible'); openSheet=null; releaseFocusTrap(); snapBack(); }
 function maybeGoHome(){ if(curScreen==='arena'&&currentWord!==null){ showExitConfirm(); } else { goHome(); } }
-function showExitConfirm(){ document.getElementById('exitConfirm').classList.add('visible'); document.getElementById('backdrop').classList.add('visible'); openSheet='exit'; setTimeout(()=>{ const f=document.querySelector('#exitConfirm button'); if(f)f.focus(); },80); }
+function showExitConfirm(){ document.getElementById('exitConfirm').classList.add('visible'); document.getElementById('backdrop').classList.add('visible'); openSheet='exit'; setTimeout(()=>{ const f=document.querySelector('#exitConfirm button'); if(f)f.focus(); setFocusTrap('exitConfirm'); },80); }
 function confirmExit(){ hideAllSheets(); goHome(); }
 function cancelExit(){ hideAllSheets(); }
 function closeRoundSummaryAndGoHome(){ document.getElementById('roundSummary').classList.remove('visible'); goHome(); }
@@ -920,7 +942,7 @@ function buildSubPicker(){
     b.onclick=()=>selectSubFinal(s.db); c.appendChild(b);
   }
 }
-function openSubPicker(){ buildSubPicker(); document.getElementById('modePicker').classList.remove('visible'); document.getElementById('backdrop').classList.add('visible'); document.getElementById('subPicker').classList.add('visible'); openSheet='sub'; setTimeout(()=>{ const f=document.querySelector('#subPicker button'); if(f) f.focus(); },80); }
+function openSubPicker(){ buildSubPicker(); document.getElementById('modePicker').classList.remove('visible'); document.getElementById('backdrop').classList.add('visible'); document.getElementById('subPicker').classList.add('visible'); openSheet='sub'; setTimeout(()=>{ const f=document.querySelector('#subPicker button'); if(f) f.focus(); setFocusTrap('subPicker'); },80); }
 function selectSubFinal(db){ hideAllSheets(); subFinal=db||null; enterArena('quiz_final'); }
 
 /* ── Report ── */
@@ -932,7 +954,7 @@ async function reportWord(){
   const note=`mode=${modeId}`+(q?`; prompt=${(q.prompt||'').replace(/<[^>]*>/g,'')}; reveal=${q.reveal||''}; correct=${q.correct}`:'');
   _lastReport=w+modeId;
   try{ if(!sb) throw new Error('offline'); const {error}=await sb.from('pending_words').insert({action:'report', word:w, note}); if(error) throw error; toast('ขอบคุณ! ส่งรายงานแล้ว'); }
-  catch(e){ toast('บันทึกรายงานไว้แล้ว ขอบคุณ!'); }
+  catch(e){ toast('รับทราบแล้ว — จะลองส่งอีกครั้งภายหลัง'); }
 }
 
 /* ╔══ ONBOARDING ══╗ */
@@ -950,16 +972,16 @@ function renderOb(){
   let body='';
   if(s.kind==='swipe'){
     body=`<div class="swipe-demo"><div class="demo-card">นก</div><div class="demo-badge demo-r">→</div><div class="demo-badge demo-l">←</div></div>
-      <div class="ob-title">${s.title}</div><div class="ob-text">${s.text}</div>`;
+      <h2 class="ob-title">${s.title}</h2><div class="ob-text">${s.text}</div>`;
   } else if(s.kind==='score'){
     body=`<div class="score-demo"><div class="sd" style="background:#FFC83D;color:#1A1410">+1<small>ตอบถูก</small></div><div class="sd" style="background:#FF8FAB;color:#1A1410">+1<small>ทุก 3 คำถูก</small></div></div>
-      <div class="ob-title" style="color:#fff">${s.title}</div><div class="ob-text" style="color:rgba(255,255,255,.95)">${s.text}</div>`;
+      <h2 class="ob-title" style="color:#fff">${s.title}</h2><div class="ob-text" style="color:rgba(255,255,255,.95)">${s.text}</div>`;
   } else {
-    body=`<div class="ob-title">${s.title}</div>
+    body=`<h2 class="ob-title">${s.title}</h2>
       <div style="display:flex;flex-direction:column;gap:11px;width:100%;max-width:270px">
-      <div class="ob-mode-row"><span class="bar" style="background:#FF5A1F"></span><div><div style="font-weight:800;font-size:16px">ทายชนิดคำ</div><div style="font-size:12px;color:#7c7164">นาม กริยา วิเศษณ์…</div></div></div>
-      <div class="ob-mode-row"><span class="bar" style="background:#2D7FF9"></span><div><div style="font-weight:800;font-size:16px">ทายมาตรา</div><div style="font-size:12px;color:#7c7164">แม่กก กด กบ กง…</div></div></div>
-      <div class="ob-mode-row"><span class="bar" style="background:#FF8FAB"></span><div><div style="font-weight:800;font-size:16px">ทายคำสะกด</div><div style="font-size:12px;color:#7c7164">สะกดถูกหรือผิด</div></div></div>
+      <div class="ob-mode-row"><span class="bar" style="background:#FF5A1F"></span><div><div style="font-weight:800;font-size:16px">ทายชนิดคำ</div><div style="font-size:12px;color:var(--mute)">นาม กริยา วิเศษณ์…</div></div></div>
+      <div class="ob-mode-row"><span class="bar" style="background:#2D7FF9"></span><div><div style="font-weight:800;font-size:16px">ทายมาตรา</div><div style="font-size:12px;color:var(--mute)">แม่กก กด กบ กง…</div></div></div>
+      <div class="ob-mode-row"><span class="bar" style="background:#FF8FAB"></span><div><div style="font-weight:800;font-size:16px">ทายคำสะกด</div><div style="font-size:12px;color:var(--mute)">สะกดถูกหรือผิด</div></div></div>
       </div>`;
   }
   document.getElementById('obBody').innerHTML=body;
@@ -976,6 +998,8 @@ document.addEventListener('keydown', e=>{
   if(document.getElementById('splash').classList.contains('active')){ if(e.key==='Enter') leaveSplash(); return; }
   if(document.getElementById('onboarding').classList.contains('active')){ if(e.key==='Enter') obAdvance(); return; }
   if(document.getElementById('nickModal').classList.contains('active')){ if(e.key==='Enter') saveNick(); return; }
+  if(document.getElementById('milestone').classList.contains('active')){ if(e.key==='Escape'||e.key==='Enter') closeMilestone(); return; }
+  if(document.getElementById('achievement').classList.contains('active')){ if(e.key==='Escape'||e.key==='Enter') hideFs('achievement'); return; }
   if(openSheet){ if(e.key==='Escape') hideAllSheets(); return; }
   if(curScreen!=='arena') return;
   if(e.key==='ArrowRight')doSwipe('right'); else if(e.key==='ArrowLeft')doSwipe('left'); else if(e.key==='ArrowUp')doSwipe('up');
