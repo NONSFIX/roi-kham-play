@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ร้อยคำ — เกมทายคำ</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&family=Prompt:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -22,10 +22,11 @@
   --blue:#2D7FF9;
   --pink:#FF8FAB;
   --yellow:#FFC83D;
-  --correct:#2FB873;
-  --wrong:#FF4D4D;
-  --mute:#7c7164;
-  --mute2:#9a8f80;
+  --correct:#178048;
+  --wrong:#D93535;
+  --mute:#6b6258;
+  --mute2:#6f6457;
+  --pink-ink:#5b3a44;
   --meter-track:#F0E6D2;
   --medal:#FFF2CC;
   --mode:#FF5A1F;          /* current-mode accent */
@@ -64,29 +65,30 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 
 /* ════════ ARENA (game) ════════ */
 #arenaScreen{ background:var(--paper); }
-.hud{ flex-shrink:0; padding:10px 14px 6px; display:flex; align-items:center; gap:11px; }
+.hud{ flex-shrink:0; padding:calc(10px + env(safe-area-inset-top, 0px)) 14px 6px; display:flex; align-items:center; gap:11px; }
 .medal{ width:54px; height:54px; flex-shrink:0; background:var(--medal); border:var(--bd) solid var(--ink); border-radius:50%; box-shadow:var(--sh-sm); display:flex; align-items:center; justify-content:center; }
 .medal svg{ width:42px; height:42px; display:block; }
 .meter-wrap{ flex:1; display:flex; flex-direction:column; gap:4px; }
 .meter-row{ display:flex; align-items:center; }
 .meter{ flex:1; height:20px; background:var(--meter-track); border:var(--bd) solid var(--ink); border-radius:7px; overflow:hidden; box-shadow:2px 2px 0 var(--ink); }
-#meterFill{ height:100%; background:var(--mode); width:0%; transition:width 450ms ease, background 250ms ease; }
+#meterFill{ height:100%; background:var(--mode); width:100%; transform-origin:left; transform:scaleX(0); transition:transform 450ms ease, background 250ms ease; }
 .meter-arrow{ width:0; height:0; border-top:10px solid transparent; border-bottom:10px solid transparent; border-left:9px solid var(--ink); margin-left:-1px; }
 .meter-meta{ display:flex; justify-content:space-between; font-weight:800; font-size:11px; color:var(--mute); }
 .meter-meta .mm-round{ color:var(--mode); }
-.home-btn{ width:40px; height:40px; flex-shrink:0; background:var(--surface); border:var(--bd) solid var(--ink); border-radius:12px; box-shadow:var(--sh-sm); display:flex; align-items:center; justify-content:center; }
+.home-btn{ width:44px; height:44px; flex-shrink:0; background:var(--surface); border:var(--bd) solid var(--ink); border-radius:12px; box-shadow:var(--sh-sm); display:flex; align-items:center; justify-content:center; }
 .home-btn:active{ transform:translate(3px,3px); box-shadow:0 0 0 var(--ink); }
 .home-btn svg{ width:20px; height:20px; }
 .mode-chip-row{ display:flex; justify-content:center; padding:2px 14px 0; flex-shrink:0; }
-.mode-chip{ background:var(--mode); color:#fff; border:2px solid var(--ink); border-radius:99px; padding:5px 14px; font-weight:800; font-size:12px; box-shadow:2px 2px 0 var(--ink); transition:transform 80ms; }
+.mode-chip{ position:relative; background:var(--mode); color:var(--ink); border:2px solid var(--ink); border-radius:99px; padding:9px 14px; font-weight:800; font-size:12px; box-shadow:2px 2px 0 var(--ink); transition:transform 80ms; }
+.mode-chip::before{ content:''; position:absolute; inset:-8px -4px; }
 .mode-chip:active{ transform:translate(2px,2px); box-shadow:0 0 0 var(--ink); }
 
 #arena{ flex:1; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; }
 #bgGlow{
-  position:absolute; left:50%; top:50%; width:170%; height:170%;
+  position:absolute; left:50%; top:50%; width:200px; height:200px; border-radius:50%;
   transform:translate(-50%,-50%) scale(calc(.5 + var(--glow,0) * .72));
-  background:radial-gradient(circle at center, var(--mode) 0%, var(--mode) 14%, transparent 60%);
-  opacity:calc(.03 + var(--glow,0) * 0.40); filter:blur(44px);
+  box-shadow:0 0 80px 80px var(--mode);
+  opacity:calc(.06 + var(--glow,0) * 0.55);
   mix-blend-mode:multiply; pointer-events:none; z-index:0;
   transition:transform 600ms ease, opacity 600ms ease;
 }
@@ -133,7 +135,7 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 .hint-wrong{ background:var(--wrong); color:#fff; flex:1; }
 .hint-skip{ background:var(--surface); color:var(--ink); padding:13px 16px; }
 .hint-right{ background:var(--correct); color:#fff; flex:1; }
-.report-btn{ display:block; margin:0 auto; padding:0 0 14px; background:none; border:none; color:var(--mute); font-size:12px; text-decoration:underline; }
+.report-btn{ display:block; margin:0 auto; padding:10px 14px; background:none; border:none; color:var(--mute); font-size:12px; text-decoration:underline; }
 
 /* ── Loading / empty ── */
 #loadingState, #emptyState{ display:none; flex-direction:column; align-items:center; gap:14px; text-align:center; padding:24px; z-index:2; }
@@ -179,10 +181,10 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 .badge-name{ font-size:12px; font-weight:800; margin-top:7px; }
 .badge-desc{ font-size:10px; color:var(--mute); margin-top:3px; line-height:1.3; }
 /* bottom nav */
-.bottom-nav{ flex-shrink:0; height:62px; border-top:var(--bd) solid var(--ink); background:var(--surface); display:flex; align-items:center; justify-content:space-around; padding:0 12px; }
+.bottom-nav{ flex-shrink:0; height:calc(62px + env(safe-area-inset-bottom, 0px)); border-top:var(--bd) solid var(--ink); background:var(--surface); display:flex; align-items:flex-start; justify-content:space-around; padding:11px 12px env(safe-area-inset-bottom, 0px); }
 .nav-item{ background:none; border:none; display:flex; align-items:center; gap:7px; padding:0; opacity:.5; }
 .nav-item svg{ width:22px; height:22px; }
-.nav-item.active{ opacity:1; background:var(--orange); color:#fff; border:var(--bd) solid var(--ink); border-radius:99px; box-shadow:2px 2px 0 var(--ink); height:40px; padding:0 16px; font-weight:800; font-size:14px; }
+.nav-item.active{ opacity:1; background:var(--orange); color:var(--ink); border:var(--bd) solid var(--ink); border-radius:99px; box-shadow:2px 2px 0 var(--ink); height:40px; padding:0 16px; font-weight:800; font-size:14px; }
 .nav-item.active svg{ width:20px; height:20px; }
 .nav-label{ display:none; }
 .nav-item.active .nav-label{ display:inline; }
@@ -276,6 +278,14 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 /* ── Toast ── */
 #toast{ position:fixed; bottom:96px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--ink); color:#fff; padding:11px 20px; border-radius:99px; font-size:13px; font-weight:700; opacity:0; pointer-events:none; transition:opacity 200ms, transform 200ms; z-index:39; max-width:90vw; text-align:center; }
 #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+#nickModal .ob-text, #nickModal .link-btn{ color:var(--pink-ink); }
+*:focus-visible{ outline:3px solid var(--ink); outline-offset:3px; border-radius:4px; }
+.pill:focus-visible, .btn-primary:focus-visible{ outline-offset:5px; }
+.mode-chip:focus-visible{ outline-offset:6px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; transition-delay:0ms !important; }
+  #bgGlow{ display:none !important; }
+}
 </style>
 </head>
 <body data-mode="quiz_pos">
@@ -304,19 +314,19 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
   <!-- ════ ARENA ════ -->
   <div class="screen" id="arenaScreen">
     <div class="hud">
-      <div class="medal" id="hudMedal" onclick="goHome()"><span id="hudMascot"></span></div>
+      <div class="medal" id="hudMedal" role="button" tabindex="0" aria-label="หน้าแรก" onclick="maybeGoHome()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();maybeGoHome()}"><span id="hudMascot"></span></div>
       <div class="meter-wrap">
         <div class="meter-row"><div class="meter"><div id="meterFill"></div></div><span class="meter-arrow"></span></div>
         <div class="meter-meta"><span class="mm-round" id="meterCount">รอบนี้ 0/10</span><span id="meterScore">⭐0 · 🔥0</span></div>
       </div>
-      <button class="home-btn" onclick="goHome()" aria-label="หน้าแรก">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#1A1410" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 L12 4 L20 11 V20 H4 Z"/></svg></button>
+      <button class="home-btn" onclick="maybeGoHome()" aria-label="หน้าแรก">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 L12 4 L20 11 V20 H4 Z"/></svg></button>
     </div>
-    <div class="mode-chip-row"><button class="mode-chip" id="modeChip" onclick="openModePicker()">ชนิดคำ ▾</button></div>
+    <div class="mode-chip-row"><button class="mode-chip" id="modeChip" onclick="openModePicker()">ชนิดคำ <span aria-hidden="true">▾</span></button></div>
     <div id="arena">
       <div id="bgGlow"></div>
       <div id="loadingState"><div class="spinner"></div><p style="color:var(--mute);font-weight:600">กำลังโหลดคำ…</p></div>
-      <div id="emptyState"><div class="em-mascot" id="emptyMascot"></div><h2>หมดคำในโหมดนี้</h2><p>ลองสลับโหมด<br>หรือเชื่อมต่ออินเทอร์เน็ตอีกครั้ง</p></div>
+      <div id="emptyState"><div class="em-mascot" id="emptyMascot"></div><h2>หมดคำในโหมดนี้</h2><p>ลองสลับโหมด<br>หรือเชื่อมต่ออินเทอร์เน็ตอีกครั้ง</p><button class="pill" style="padding:11px 26px;font-size:15px;background:var(--ink);color:#fff" onclick="openModePicker()">สลับโหมด</button></div>
       <div id="bigFlash"></div>
     </div>
     <div class="hint-row">
@@ -329,7 +339,7 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 </div>
 
 <!-- ════ SPLASH ════ -->
-<div class="fs" id="splash">
+<div class="fs" id="splash" role="dialog" aria-modal="true" aria-label="ยินดีต้อนรับสู่ร้อยคำ">
   <div class="statusbar" style="color:#fff"><span>9:41</span><span><i></i><i></i><i></i></span></div>
   <div class="fs-body">
     <div class="fs-mascot" id="splashMascot"></div>
@@ -341,7 +351,7 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 </div>
 
 <!-- ════ ONBOARDING ════ -->
-<div class="fs" id="onboarding">
+<div class="fs" id="onboarding" role="dialog" aria-modal="true" aria-label="วิธีเล่นเกม">
   <div class="statusbar"><span>9:41</span><span id="obStep" style="color:var(--mute);font-weight:600">1 / 3</span></div>
   <div class="fs-body" id="obBody"></div>
   <div class="fs-foot">
@@ -351,19 +361,19 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 </div>
 
 <!-- ════ NICKNAME ════ -->
-<div class="fs" id="nickModal">
+<div class="fs" id="nickModal" role="dialog" aria-modal="true" aria-labelledby="nick-heading">
   <div class="statusbar"><span>9:41</span><span><i></i><i></i><i></i></span></div>
   <div class="fs-body">
-    <div class="ob-title">เรียกคุณว่า?</div>
-    <div class="ob-text" style="color:#5b3a44">ใส่ชื่อเล่นเพื่อขึ้นกระดานคะแนน หรือข้ามไปเล่นแบบไม่ระบุชื่อก็ได้</div>
+    <div class="ob-title" id="nick-heading">เรียกคุณว่า?</div>
+    <div class="ob-text">ใส่ชื่อเล่นเพื่อขึ้นกระดานคะแนน หรือข้ามไปเล่นแบบไม่ระบุชื่อก็ได้</div>
     <input id="nickInput" class="prof-field" maxlength="16" placeholder="พิมพ์ชื่อเล่น…" autocomplete="off" style="background:#fff">
     <button class="btn-primary" onclick="saveNick()">บันทึก</button>
-    <button class="link-btn" style="color:#5b3a44" onclick="skipNick()">ข้าม เล่นเลย</button>
+    <button class="link-btn" onclick="skipNick()">ข้าม เล่นเลย</button>
   </div>
 </div>
 
 <!-- ════ MILESTONE ════ -->
-<div class="fs" id="milestone">
+<div class="fs" id="milestone" role="dialog" aria-modal="true" aria-label="ไมล์สโตน">
   <div class="statusbar" style="color:#fff"><span>9:41</span><span><i></i><i></i><i></i></span></div>
   <div class="fs-body">
     <div class="fs-mascot" id="msMascot"></div>
@@ -375,7 +385,7 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 </div>
 
 <!-- ════ ACHIEVEMENT ════ -->
-<div class="fs" id="achievement">
+<div class="fs" id="achievement" role="dialog" aria-modal="true" aria-labelledby="achName">
   <div class="statusbar" style="color:#fff"><span>9:41</span><span><i></i><i></i><i></i></span></div>
   <div class="fs-body">
     <div class="ach-eyebrow">ปลดล็อกตรา</div>
@@ -392,29 +402,39 @@ button{ font-family:inherit; color:var(--ink); cursor:pointer; }
 
 <!-- ════ BACKDROP + SHEETS ════ -->
 <div id="backdrop" onclick="hideAllSheets()"></div>
-<div class="sheet" id="modePicker">
+<div class="sheet" id="modePicker" role="dialog" aria-modal="true" aria-labelledby="mp-title">
   <div class="sheet-handle"></div>
-  <div class="sheet-title">เลือกโหมดเกม</div>
+  <div class="sheet-title" id="mp-title">เลือกโหมดเกม</div>
   <div id="mpRows"></div>
 </div>
-<div class="sheet" id="subPicker">
+<div class="sheet" id="subPicker" role="dialog" aria-modal="true" aria-labelledby="sp-title">
   <div class="sheet-handle"></div>
-  <div class="sheet-title">ทายมาตรา — เลือกแม่</div>
+  <div class="sheet-title" id="sp-title">ทายมาตรา — เลือกแม่</div>
   <div id="spRows"></div>
+</div>
+<div class="sheet" id="exitConfirm" role="dialog" aria-modal="true" aria-labelledby="ec-title">
+  <div class="sheet-handle"></div>
+  <div style="text-align:center;padding:4px 0 8px">
+    <div style="font-weight:800;font-size:20px;margin-bottom:8px" id="ec-title">ออกกลางเกม?</div>
+    <div style="font-size:14px;color:var(--mute);margin-bottom:20px">คะแนนรอบนี้จะหาย</div>
+    <button class="btn-primary" style="margin-bottom:10px" onclick="confirmExit()">ออกเลย</button>
+    <button class="btn-primary" style="background:var(--surface);color:var(--ink)" onclick="cancelExit()">เล่นต่อ</button>
+  </div>
 </div>
 
 <!-- ════ ROUND SUMMARY ════ -->
-<div id="roundSummary">
+<div id="roundSummary" role="dialog" aria-modal="true" aria-labelledby="rs-title">
   <div class="rs-card">
-    <div class="rs-title">จบรอบ! 🎉</div>
+    <div class="rs-title" id="rs-title">จบรอบ! 🎉</div>
     <div class="rs-stats" id="rsStats"></div>
     <div class="rs-ans-head">เฉลยรอบนี้</div>
     <div class="rs-answers" id="rsAnswers"></div>
     <button class="btn-primary accent" onclick="startNextRound()">เล่นรอบต่อไป →</button>
+    <button class="btn-primary" style="background:var(--surface);color:var(--ink);margin-top:10px;box-shadow:var(--sh)" onclick="closeRoundSummaryAndGoHome()">กลับหน้าแรก</button>
   </div>
 </div>
 
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="words.js"></script>
@@ -505,9 +525,9 @@ let dragging=false, startX=0, startY=0, dx=0, dy=0;
 /* ── Helpers ── */
 function modeObj(){ return MODES.find(m=>m.id===modeId); }
 function el(tag,cls,text){ const d=document.createElement(tag); d.className=cls; if(text!==undefined) d.textContent=text; return d; }
-function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3500); }
 const randOf = a => a[Math.floor(Math.random()*a.length)];
-function showFs(id){ document.getElementById(id).classList.add('active'); }
+function showFs(id){ const el=document.getElementById(id); el.classList.add('active'); const f=el.querySelector('button:not([disabled]),input:not([disabled]),[tabindex="0"]'); if(f) setTimeout(()=>f.focus(),80); }
 function hideFs(id){ document.getElementById(id).classList.remove('active'); }
 function anyFsOpen(){ return ['splash','onboarding','nickModal','milestone','achievement'].some(id=>document.getElementById(id).classList.contains('active')); }
 function escapeHtml(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -679,7 +699,7 @@ function fadeGlow(amount){ glowLevel=Math.max(0, glowLevel-amount); lastAnsTs=(w
 function startGlowDecay(){ if(glowDecayTimer) return; glowDecayTimer=setInterval(()=>{ if(curScreen!=='arena') return; if(glowLevel>0){ glowLevel=Math.max(0, glowLevel-0.02); setGlow(); } },700); }
 function stopGlowDecay(){ if(glowDecayTimer){ clearInterval(glowDecayTimer); glowDecayTimer=null; } }
 function updateRoundProgress(){
-  document.getElementById('meterFill').style.width=(roundCount/ROUND_SIZE*100)+'%';
+  document.getElementById('meterFill').style.transform='scaleX('+(roundCount/ROUND_SIZE)+')';
   document.getElementById('meterCount').textContent=`รอบนี้ ${roundCount}/${ROUND_SIZE}`;
   document.getElementById('meterScore').textContent=`⭐${quizScore} · 🔥${quizStreak}`;
 }
@@ -721,7 +741,8 @@ function showMilestone(m){
 function closeMilestone(){ hideFs('milestone'); if(quizScore>=100 && !profile.name){ openNick(); } }
 function spawnConfetti(id){
   const p=document.getElementById(id); p.querySelectorAll('.confetti').forEach(c=>c.remove());
-  const cols=['#FF5A1F','#FFC83D','#2D7FF9','#2FB873','#FF8FAB'];
+  const cs=getComputedStyle(document.documentElement);
+  const cols=[cs.getPropertyValue('--orange').trim(),cs.getPropertyValue('--yellow').trim(),cs.getPropertyValue('--blue').trim(),cs.getPropertyValue('--correct').trim(),cs.getPropertyValue('--pink').trim()];
   for(let i=0;i<18;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left=(Math.random()*100)+'%'; c.style.animationDelay=(Math.random()*0.5)+'s'; c.style.background=cols[i%cols.length]; if(i%2) c.style.borderRadius='50%'; p.appendChild(c); }
 }
 
@@ -775,7 +796,7 @@ async function enterArena(id){
   modeId=id; document.body.dataset.mode=id;
   if(id!=='quiz_final') subFinal=null;
   const subLabel=(id==='quiz_final'&&subFinal)?(' · '+(SUB_FINALS.find(s=>s.db===subFinal)||{}).short):'';
-  document.getElementById('modeChip').textContent=modeObj().th+subLabel+' ▾';
+  document.getElementById('modeChip').innerHTML=modeObj().th+subLabel+' <span aria-hidden="true">▾</span>';
   document.getElementById('modeChip').style.background=modeObj().color;
   if(!profile.modes.includes(id)){ profile.modes.push(id); saveProfile(); if(profile.modes.length>=3) unlock('allmodes'); }
   queue=[]; currentWord=null; showScreen('arena'); resetRound(); setHudMascot('idle'); resetIdle();
@@ -879,8 +900,13 @@ function buildModePicker(){
     b.onclick=()=>selectMode(m.id); c.appendChild(b);
   }
 }
-function openModePicker(){ buildModePicker(); document.getElementById('backdrop').classList.add('visible'); document.getElementById('modePicker').classList.add('visible'); openSheet='mode'; }
-function hideAllSheets(){ document.getElementById('backdrop').classList.remove('visible'); document.getElementById('modePicker').classList.remove('visible'); document.getElementById('subPicker').classList.remove('visible'); openSheet=null; snapBack(); }
+function openModePicker(){ buildModePicker(); document.getElementById('backdrop').classList.add('visible'); document.getElementById('modePicker').classList.add('visible'); openSheet='mode'; setTimeout(()=>{ const f=document.querySelector('#modePicker button'); if(f) f.focus(); },80); }
+function hideAllSheets(){ document.getElementById('backdrop').classList.remove('visible'); document.getElementById('modePicker').classList.remove('visible'); document.getElementById('subPicker').classList.remove('visible'); document.getElementById('exitConfirm').classList.remove('visible'); openSheet=null; snapBack(); }
+function maybeGoHome(){ if(curScreen==='arena'&&currentWord!==null){ showExitConfirm(); } else { goHome(); } }
+function showExitConfirm(){ document.getElementById('exitConfirm').classList.add('visible'); document.getElementById('backdrop').classList.add('visible'); openSheet='exit'; setTimeout(()=>{ const f=document.querySelector('#exitConfirm button'); if(f)f.focus(); },80); }
+function confirmExit(){ hideAllSheets(); goHome(); }
+function cancelExit(){ hideAllSheets(); }
+function closeRoundSummaryAndGoHome(){ document.getElementById('roundSummary').classList.remove('visible'); goHome(); }
 async function selectMode(id){ if(id==='quiz_final'){ openSubPicker(); return; } hideAllSheets(); if(id===modeId) return; enterArena(id); }
 
 /* ── Sub-mode picker (per-มาตรา drill) ── */
@@ -894,7 +920,7 @@ function buildSubPicker(){
     b.onclick=()=>selectSubFinal(s.db); c.appendChild(b);
   }
 }
-function openSubPicker(){ buildSubPicker(); document.getElementById('modePicker').classList.remove('visible'); document.getElementById('backdrop').classList.add('visible'); document.getElementById('subPicker').classList.add('visible'); openSheet='sub'; }
+function openSubPicker(){ buildSubPicker(); document.getElementById('modePicker').classList.remove('visible'); document.getElementById('backdrop').classList.add('visible'); document.getElementById('subPicker').classList.add('visible'); openSheet='sub'; setTimeout(()=>{ const f=document.querySelector('#subPicker button'); if(f) f.focus(); },80); }
 function selectSubFinal(db){ hideAllSheets(); subFinal=db||null; enterArena('quiz_final'); }
 
 /* ── Report ── */
